@@ -1,0 +1,780 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{var _t=localStorage.getItem('eduadvisor-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Credit Transfer System</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* override login-page body centering */
+    body { display: block; }
+
+    /* header should scroll with the page, not float */
+    header { position: static; }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+      padding: 24px;
+      min-height: calc(100vh - 68px);
+      align-items: start;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: #ffffff;
+      border: 1px solid rgba(63, 97, 255, 0.12);
+      border-radius: 28px;
+      padding: 28px 20px;
+      box-shadow: 0 24px 60px rgba(47, 67, 120, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: sticky;
+      top: 24px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-dot { width: 14px; height: 14px; border-radius: 50%; background: #3f61ff; }
+    .brand-title { font-size: 1.05rem; font-weight: 700; color: #1f2b44; }
+
+    .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .nav-item { border-radius: 18px; overflow: hidden; }
+    .nav-link {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      text-decoration: none;
+      color: #1f2b44;
+      font-weight: 600;
+      background: #f9fbff;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: rgba(63, 97, 255, 0.12);
+      transform: translateX(2px);
+    }
+    .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; color: #3f61ff; }
+
+    .profile-card {
+      padding: 18px;
+      border-radius: 22px;
+      background: #f8faff;
+      border: 1px solid rgba(63, 97, 255, 0.08);
+    }
+    .profile-card h2 { margin: 0 0 6px; font-size: 1.1rem; color: #1f2b44; }
+    .profile-card p  { margin: 0; color: #6d7a98; font-size: 0.95rem; }
+
+    /* ── Main content column ── */
+    .main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+    .hero {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 26px 30px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    }
+    .hero h1 { margin: 0 0 6px; font-size: 1.5rem; color: #1e293b; }
+    .hero p  { margin: 0; color: #64748b; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; padding: 16px; }
+      .sidebar { position: static; }
+    }
+    @media (max-width: 640px) {
+      .sidebar { padding: 16px; }
+    }
+
+    /* ── AI Advisor Panel ── */
+    .ai-advisor-card {
+      background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+      border: 1.5px solid rgba(99,102,241,.25);
+      border-radius: 18px;
+      padding: 22px 26px;
+      box-shadow: 0 4px 20px rgba(99,102,241,.1);
+    }
+    html[data-theme="dark"] .ai-advisor-card {
+      background: linear-gradient(135deg, rgba(99,102,241,.1) 0%, rgba(139,92,246,.08) 100%);
+      border-color: rgba(99,102,241,.35);
+    }
+    .ai-advisor-header {
+      display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;
+    }
+    .ai-advisor-header h3 { margin: 0; font-size: 1.05rem; color: #4f46e5; flex: 1; }
+    .ai-advisor-header .ai-badge {
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      color: #fff; border-radius: 50%; width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+    }
+    .ai-toggle-icon { color: #6366f1; font-size: 13px; transition: transform .2s; }
+    .ai-toggle-icon.open { transform: rotate(180deg); }
+    .ai-panel-body { margin-top: 16px; }
+    .ai-intro {
+      color: #64748b; font-size: 13.5px; margin: 0 0 16px;
+      padding: 10px 14px;
+      background: rgba(99,102,241,.07);
+      border-radius: 10px;
+      border-left: 3px solid #6366f1;
+    }
+    html[data-theme="dark"] .ai-intro { color: #94a3b8; }
+    .ai-btn-row {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+    }
+    .ai-action-btn {
+      padding: 9px 16px; border-radius: 10px; border: 1.5px solid rgba(99,102,241,.3);
+      background: #fff; color: #4f46e5; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all .18s; white-space: nowrap;
+    }
+    html[data-theme="dark"] .ai-action-btn { background: #1e293b; color: #a5b4fc; border-color: rgba(99,102,241,.4); }
+    .ai-action-btn:hover { background: #4f46e5; color: #fff; border-color: #4f46e5; transform: translateY(-1px); }
+    .ai-action-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .ai-chat-row {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .ai-chat-row input {
+      flex: 1; padding: 9px 14px; border-radius: 10px;
+      border: 1.5px solid rgba(99,102,241,.25);
+      font-size: 13.5px; color: inherit; background: #fff;
+      outline: none; transition: border .18s;
+    }
+    html[data-theme="dark"] .ai-chat-row input { background: #1e293b; border-color: rgba(99,102,241,.35); color: #e2e8f0; }
+    .ai-chat-row input:focus { border-color: #6366f1; }
+    .ai-ask-btn {
+      padding: 9px 18px; border-radius: 10px; border: none;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .18s; white-space: nowrap;
+    }
+    .ai-ask-btn:hover { opacity: .88; }
+    .ai-ask-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .ai-result {
+      margin-top: 16px; padding: 16px 18px;
+      background: #fff; border-radius: 14px;
+      border: 1px solid rgba(99,102,241,.18);
+      font-size: 13.5px; line-height: 1.7; color: #1e293b;
+      white-space: pre-wrap;
+    }
+    html[data-theme="dark"] .ai-result { background: #1e293b; color: #e2e8f0; border-color: rgba(99,102,241,.25); }
+    .ai-result .ai-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: #8b5cf6; margin-bottom: 8px; display: block;
+    }
+    .ai-loading {
+      display: flex; align-items: center; gap: 10px; color: #6366f1; font-size: 13.5px;
+    }
+    .ai-spinner {
+      width: 18px; height: 18px; border: 2.5px solid rgba(99,102,241,.25);
+      border-top-color: #6366f1; border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ai-copy-btn {
+      margin-top: 10px; padding: 6px 14px; border-radius: 8px;
+      border: 1px solid rgba(99,102,241,.3); background: transparent;
+      color: #6366f1; font-size: 12px; cursor: pointer; transition: all .15s;
+    }
+    .ai-copy-btn:hover { background: #6366f1; color: #fff; }
+  </style>
+
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🎓</span>
+        <div>
+          <h1>CreditTransfer</h1>
+          <p>Student Advisory Portal</p>
+        </div>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-tab="transfer">Transfer Request</button>
+        <button class="nav-btn" data-tab="status">My Requests</button>
+        <button class="nav-btn" data-tab="guide">Guidelines</button>
+      </nav>
+    </div>
+  </header>
+
+    <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Student Advice</div>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span>Home</a></li>
+        <li class="nav-item"><a href="advice.html" class="nav-link"><span class="nav-icon">🎯</span>Advice</a></li>
+        <li class="nav-item"><a href="schedule.html" class="nav-link"><span class="nav-icon">📅</span>Schedule</a></li>
+        <li class="nav-item"><a href="resources.html" class="nav-link"><span class="nav-icon">📚</span>Resources</a></li>
+        <li class="nav-item"><a href="counselling.html" class="nav-link"><span class="nav-icon">🗓️</span>Counselling Hours</a></li>
+        <li class="nav-item"><a href="CreaditTransfer.html" class="nav-link active"><span class="nav-icon">🔄</span>Credit Transfer</a></li>
+        <li class="nav-item"><a href="my-courses.html" class="nav-link"><span class="nav-icon">📋</span>My Courses</a></li>
+        <li class="nav-item"><a href="grade-calculator.html" class="nav-link"><span class="nav-icon">🎓</span>Grade Calculator</a></li>
+        <li class="nav-item"><a href="learning-gap.html" class="nav-link"><span class="nav-icon">🧠</span>Learning Gaps</a></li>
+        <li class="nav-item"><a href="https://diuqbank.com/#google_vignette" class="nav-link" target="_blank" rel="noopener noreferrer"><span class="nav-icon">📝</span>Q-Bank</a></li>
+        <li class="nav-item"><a href="discussion.html"     class="nav-link"><span class="nav-icon">💬</span>Discussion</a></li>
+        <li class="nav-item"><a href="my-papers.html"    class="nav-link"><span class="nav-icon">📄</span>My Papers</a></li>
+        <li class="nav-item"><a href="lost-found.html"   class="nav-link"><span class="nav-icon">🔍</span>Lost &amp; Found</a></li>
+        <li class="nav-item"><a href="profile.html"        class="nav-link"><span class="nav-icon">👤</span>Profile</a></li>
+        <li class="nav-item"><a href="/logout"             class="nav-link"><span class="nav-icon">🚪</span>Logout</a></li>
+      </ul>
+      <div class="profile-card">
+        <h2>Jane Doe</h2>
+        <p>Student ID: S12345</p>
+      </div>
+    </aside>
+    <main class="main">
+      <section class="hero">
+        <h1>Welcome to the Credit Transfer System</h1>
+        <p>Submit and track your credit transfer requests with ease.</p>
+      </section>
+
+    <!-- ── TAB: Transfer Request ── -->
+    <section id="tab-transfer" class="tab active">
+
+      <div class="page-title">
+        <h2>Submit a Credit Transfer Request</h2>
+        <p>Fill in the details below to request evaluation of credits from another institution.</p>
+      </div>
+
+      <!-- ── AI Credit Transfer Advisor ── -->
+      <div class="ai-advisor-card">
+        <div class="ai-advisor-header" onclick="toggleAiPanel()">
+          <div class="ai-badge">🤖</div>
+          <h3>AI Credit Transfer Advisor</h3>
+          <span class="ai-toggle-icon open" id="aiToggleIcon">▲</span>
+        </div>
+        <div class="ai-panel-body" id="aiPanelBody">
+          <p class="ai-intro">
+            Fill in the form below, then use these AI tools to check your eligibility,
+            get course equivalency suggestions, or auto-draft your remarks.
+          </p>
+          <div class="ai-btn-row">
+            <button class="ai-action-btn" onclick="runAI('eligibility')" id="btn-eligibility">
+              ✅ Check Eligibility
+            </button>
+            <button class="ai-action-btn" onclick="runAI('equivalency')" id="btn-equivalency">
+              🔄 Suggest Course Equivalencies
+            </button>
+            <button class="ai-action-btn" onclick="runAI('remarks')" id="btn-remarks">
+              ✍️ Draft My Remarks
+            </button>
+          </div>
+          <div class="ai-chat-row">
+            <input type="text" id="aiQuestion"
+                   placeholder="Ask anything about credit transfer (e.g. 'Will my ECTS credits count?')"
+                   onkeydown="if(event.key==='Enter') runAI('chat')" />
+            <button class="ai-ask-btn" onclick="runAI('chat')" id="btn-chat">Ask AI</button>
+          </div>
+          <div id="aiResult" style="display:none" class="ai-result">
+            <span class="ai-label" id="aiResultLabel"></span>
+            <div id="aiResultText"></div>
+            <button class="ai-copy-btn" onclick="copyAiResult()" id="aiCopyBtn" style="display:none">
+              📋 Copy to Remarks
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-grid">
+
+        <!-- Student Info -->
+        <div class="card full">
+          <div class="card-header">
+            <span class="step-badge">1</span>
+            <h3>Student Information</h3>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Full Name <span class="req">*</span></label>
+              <input type="text" id="studentName" placeholder="e.g. Ahmed Al-Rashid" />
+            </div>
+            <div class="field">
+              <label>Student ID <span class="req">*</span></label>
+              <input type="text" id="studentId" placeholder="e.g. S-2024-001" />
+            </div>
+            <div class="field">
+              <label>Email Address <span class="req">*</span></label>
+              <input type="email" id="studentEmail" placeholder="student@university.edu" />
+            </div>
+            <div class="field">
+              <label>Current Program <span class="req">*</span></label>
+              <select id="currentProgram">
+                <option value="">Select program…</option>
+                <option>Computer Science</option>
+                <option>Information Technology</option>
+                <option>Software Engineering</option>
+                <option>Business Administration</option>
+                <option>Data Science</option>
+                <option>Cybersecurity</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Current Year</label>
+              <select id="currentYear">
+                <option value="">Select year…</option>
+                <option>Year 1</option>
+                <option>Year 2</option>
+                <option>Year 3</option>
+                <option>Year 4</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>GPA</label>
+              <input type="number" id="gpa" placeholder="e.g. 3.5" min="0" max="4" step="0.01" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Source Institution -->
+        <div class="card">
+          <div class="card-header">
+            <span class="step-badge">2</span>
+            <h3>Source Institution</h3>
+          </div>
+          <div class="form-grid">
+            <div class="field full-col">
+              <label>Institution Name <span class="req">*</span></label>
+              <input type="text" id="sourceInstitution" placeholder="e.g. MIT, Stanford University" />
+            </div>
+            <div class="field">
+              <label>Country</label>
+              <select id="sourceCountry">
+                <option value="">Select country…</option>
+                <option>United States</option>
+                <option>United Kingdom</option>
+                <option>Canada</option>
+                <option>Australia</option>
+                <option>Germany</option>
+                <option>France</option>
+                <option>UAE</option>
+                <option>Saudi Arabia</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Grading System</label>
+              <select id="gradingSystem">
+                <option value="">Select system…</option>
+                <option>4.0 GPA Scale</option>
+                <option>Percentage (0–100)</option>
+                <option>Letter Grade</option>
+                <option>European ECTS</option>
+                <option>UK Honours</option>
+              </select>
+            </div>
+            <div class="field full-col">
+              <label>Program Studied</label>
+              <input type="text" id="sourceProgramStudied" placeholder="e.g. Bachelor of Computer Science" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Target Program -->
+        <div class="card">
+          <div class="card-header">
+            <span class="step-badge">3</span>
+            <h3>Target Program</h3>
+          </div>
+          <div class="form-grid">
+            <div class="field full-col">
+              <label>Target Department <span class="req">*</span></label>
+              <select id="targetDepartment">
+                <option value="">Select department…</option>
+                <option>College of Computing</option>
+                <option>College of Engineering</option>
+                <option>College of Business</option>
+                <option>College of Science</option>
+                <option>College of Arts</option>
+              </select>
+            </div>
+            <div class="field full-col">
+              <label>Target Program <span class="req">*</span></label>
+              <select id="targetProgram">
+                <option value="">Select target program…</option>
+                <option>BSc Computer Science</option>
+                <option>BSc Software Engineering</option>
+                <option>BSc Information Technology</option>
+                <option>BBA Business Administration</option>
+                <option>BSc Data Science</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Entry Level</label>
+              <select id="entryLevel">
+                <option value="">Select…</option>
+                <option>Year 1 — Freshman</option>
+                <option>Year 2 — Sophomore</option>
+                <option>Year 3 — Junior</option>
+                <option>Year 4 — Senior</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Transfer Semester</label>
+              <select id="transferSemester">
+                <option value="">Select…</option>
+                <option>Fall 2025</option>
+                <option>Spring 2026</option>
+                <option>Fall 2026</option>
+                <option>Spring 2027</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Course Mapping -->
+        <div class="card full">
+          <div class="card-header">
+            <span class="step-badge">4</span>
+            <h3>Course Transfer Mapping</h3>
+          </div>
+
+          <div id="courseList">
+            <!-- rows injected by JS -->
+          </div>
+
+          <button class="btn-ghost" id="addCourseBtn">+ Add Course</button>
+
+          <div class="credit-summary" id="creditSummary" style="display:none">
+            <div class="summary-item">
+              <span>Total Credits Requested</span>
+              <strong id="totalCredits">0</strong>
+            </div>
+            <div class="summary-item">
+              <span>Courses Listed</span>
+              <strong id="totalCourses">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="card">
+          <div class="card-header">
+            <span class="step-badge">5</span>
+            <h3>Supporting Documents</h3>
+          </div>
+          <div class="doc-checklist">
+            <label class="doc-item">
+              <input type="checkbox" id="docTranscript" />
+              <span class="checkmark"></span>
+              <div>
+                <strong>Official Transcript</strong>
+                <small>Sealed, certified copy from source institution</small>
+              </div>
+            </label>
+            <label class="doc-item">
+              <input type="checkbox" id="docSyllabus" />
+              <span class="checkmark"></span>
+              <div>
+                <strong>Course Syllabi</strong>
+                <small>Detailed syllabi for each course requested</small>
+              </div>
+            </label>
+            <label class="doc-item">
+              <input type="checkbox" id="docDegree" />
+              <span class="checkmark"></span>
+              <div>
+                <strong>Degree Certificate / Enrollment Proof</strong>
+                <small>Evidence of enrollment or completion</small>
+              </div>
+            </label>
+            <label class="doc-item">
+              <input type="checkbox" id="docAccred" />
+              <span class="checkmark"></span>
+              <div>
+                <strong>Institutional Accreditation</strong>
+                <small>Proof of source institution accreditation</small>
+              </div>
+            </label>
+          </div>
+          <p class="doc-note">Please bring original documents to the Registrar's Office within 14 days of submitting this form.</p>
+        </div>
+
+        <!-- Additional Notes -->
+        <div class="card">
+          <div class="card-header">
+            <span class="step-badge">6</span>
+            <h3>Additional Notes</h3>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Remarks / Special Circumstances</label>
+            <textarea id="notes" rows="6" placeholder="Describe any special circumstances, reasons for transfer, or additional information the advisory committee should consider…"></textarea>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="card full submit-card">
+          <div class="declaration">
+            <label class="doc-item">
+              <input type="checkbox" id="declaration" />
+              <span class="checkmark"></span>
+              <div>
+                <strong>I declare that all information provided is accurate and complete.</strong>
+                <small>I understand that submitting false information may result in rejection and academic penalties.</small>
+              </div>
+            </label>
+          </div>
+          <div class="submit-row">
+            <button class="btn-secondary" id="saveDraftBtn">Save Draft</button>
+            <button class="btn-primary" id="submitBtn">Submit Request</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── TAB: My Requests ── -->
+    <section id="tab-status" class="tab">
+      <div class="page-title">
+        <h2>My Transfer Requests</h2>
+        <p>Track the status of all your submitted credit transfer requests.</p>
+      </div>
+
+      <div id="noRequests" class="empty-state">
+        <span class="empty-icon">📋</span>
+        <h3>No requests yet</h3>
+        <p>Submit a credit transfer request and it will appear here.</p>
+        <button class="btn-primary" onclick="switchTab('transfer')">Start a Request</button>
+      </div>
+
+      <div id="requestsContainer" class="requests-grid" style="display:none"></div>
+    </section>
+
+    <!-- ── TAB: Guidelines ── -->
+    <section id="tab-guide" class="tab">
+      <div class="page-title">
+        <h2>Credit Transfer Guidelines</h2>
+        <p>Read these guidelines carefully before submitting your request.</p>
+      </div>
+
+      <div class="guide-grid">
+        <div class="guide-card">
+          <div class="guide-icon">✅</div>
+          <h3>Eligibility Criteria</h3>
+          <ul>
+            <li>Courses must be from an accredited institution</li>
+            <li>Minimum grade of C (or equivalent 2.0/4.0) required</li>
+            <li>Courses must be equivalent in content (≥ 70% overlap)</li>
+            <li>Credits must have been earned within the last 7 years</li>
+            <li>Maximum 60 credits may be transferred into any program</li>
+          </ul>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-icon">📅</div>
+          <h3>Timeline</h3>
+          <ul>
+            <li>Submit requests at least 8 weeks before semester start</li>
+            <li>Initial review: 2–3 business days</li>
+            <li>Department evaluation: up to 3 weeks</li>
+            <li>Final decision notification: within 30 days</li>
+            <li>Appeals must be filed within 14 days of decision</li>
+          </ul>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-icon">📄</div>
+          <h3>Required Documents</h3>
+          <ul>
+            <li>Official transcript (sealed envelope)</li>
+            <li>Course syllabus for each transfer course</li>
+            <li>Proof of institutional accreditation</li>
+            <li>Degree certificate or enrollment letter</li>
+            <li>Completed credit transfer application form</li>
+          </ul>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-icon">⚠️</div>
+          <h3>Important Notes</h3>
+          <ul>
+            <li>Transfer credits appear as "TC" on your transcript</li>
+            <li>Transfer grades do NOT affect your local GPA</li>
+            <li>Core curriculum courses receive priority evaluation</li>
+            <li>Language courses require additional placement test</li>
+            <li>Graduate-level credits cannot be transferred to undergraduate</li>
+          </ul>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-icon">🔄</div>
+          <h3>Process Overview</h3>
+          <ol>
+            <li>Submit online application with all documents</li>
+            <li>Registrar's office verifies documents</li>
+            <li>Department head reviews course equivalencies</li>
+            <li>Academic committee makes final decision</li>
+            <li>Student notified via email</li>
+            <li>Approved credits posted to student record</li>
+          </ol>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-icon">📞</div>
+          <h3>Contact & Support</h3>
+          <ul>
+            <li><strong>Registrar's Office:</strong> reg@university.edu</li>
+            <li><strong>Student Advisory:</strong> advise@university.edu</li>
+            <li><strong>Phone:</strong> +1 (800) 123-4567</li>
+            <li><strong>Office Hours:</strong> Mon–Fri, 8 AM – 5 PM</li>
+            <li><strong>Walk-in:</strong> Admin Building, Room 104</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+  </div><!-- /.layout -->
+
+  <!-- Success Modal -->
+  <div id="modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-icon success">✓</div>
+      <h2>Request Submitted!</h2>
+      <p>Your credit transfer request has been received. Reference number:</p>
+      <div class="ref-badge" id="refNumber"></div>
+      <p class="modal-sub">You will receive a confirmation email within 24 hours. Track your request under <strong>My Requests</strong>.</p>
+      <button class="btn-primary" id="modalClose">Done</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+  <script>
+    // ── AI Advisor ────────────────────────────────────────────────────
+    function toggleAiPanel() {
+      var body = document.getElementById('aiPanelBody');
+      var icon = document.getElementById('aiToggleIcon');
+      var hidden = body.style.display === 'none';
+      body.style.display = hidden ? '' : 'none';
+      icon.textContent = hidden ? '▲' : '▼';
+      icon.classList.toggle('open', hidden);
+    }
+
+    function collectFormData() {
+      function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+      // Collect course rows (uses actual class names from script.js)
+      var courses = [];
+      document.querySelectorAll('.course-row').forEach(function(row) {
+        var srcEl     = row.querySelector('.src-name');
+        var destEl    = row.querySelector('.dest-name');
+        var credEl    = row.querySelector('.credits-input');
+        var gradeEl   = row.querySelector('.grade-input, select');
+        var sourceName = srcEl   ? srcEl.value.trim()   : '';
+        var targetName = destEl  ? destEl.value.trim()  : '';
+        var credits    = credEl  ? credEl.value.trim()  : '';
+        var grade      = gradeEl ? gradeEl.value.trim() : '';
+        if (sourceName) courses.push({ sourceName: sourceName, targetName: targetName, credits: credits, grade: grade });
+      });
+
+      return {
+        studentName:         val('studentName'),
+        currentProgram:      val('currentProgram'),
+        currentYear:         val('currentYear'),
+        gpa:                 val('gpa'),
+        sourceInstitution:   val('sourceInstitution'),
+        sourceCountry:       val('sourceCountry'),
+        gradingSystem:       val('gradingSystem'),
+        sourceProgramStudied:val('sourceProgramStudied'),
+        targetDepartment:    val('targetDepartment'),
+        targetProgram:       val('targetProgram'),
+        entryLevel:          val('entryLevel'),
+        transferSemester:    val('transferSemester'),
+        notes:               val('notes'),
+        courses:             courses
+      };
+    }
+
+    var AI_LABELS = {
+      eligibility: 'Eligibility Analysis',
+      equivalency: 'Course Equivalency Suggestions',
+      remarks:     'AI-Drafted Remarks',
+      chat:        'AI Answer'
+    };
+
+    function setAiLoading(on) {
+      ['btn-eligibility','btn-equivalency','btn-remarks','btn-chat'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.disabled = on;
+      });
+    }
+
+    function showAiResult(mode, text) {
+      var resultDiv  = document.getElementById('aiResult');
+      var labelEl    = document.getElementById('aiResultLabel');
+      var textEl     = document.getElementById('aiResultText');
+      var copyBtn    = document.getElementById('aiCopyBtn');
+
+      labelEl.textContent = AI_LABELS[mode] || 'AI Response';
+      textEl.textContent  = text;
+      resultDiv.style.display = '';
+      // Only show copy-to-remarks button for remarks mode
+      copyBtn.style.display = (mode === 'remarks') ? '' : 'none';
+      resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function showAiLoading(mode) {
+      var resultDiv = document.getElementById('aiResult');
+      var labelEl   = document.getElementById('aiResultLabel');
+      var textEl    = document.getElementById('aiResultText');
+      var copyBtn   = document.getElementById('aiCopyBtn');
+
+      labelEl.textContent = AI_LABELS[mode] || 'AI Response';
+      textEl.innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div>Thinking…</div>';
+      copyBtn.style.display = 'none';
+      resultDiv.style.display = '';
+    }
+
+    function runAI(mode) {
+      var question = mode === 'chat' ? (document.getElementById('aiQuestion').value.trim()) : '';
+      if (mode === 'chat' && !question) {
+        document.getElementById('aiQuestion').focus();
+        return;
+      }
+
+      setAiLoading(true);
+      showAiLoading(mode);
+
+      fetch('/api/credit-transfer/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode:     mode,
+          formData: collectFormData(),
+          question: question
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        showAiResult(mode, data.reply || 'No response received.');
+        if (mode === 'chat') document.getElementById('aiQuestion').value = '';
+      })
+      .catch(function(e) {
+        showAiResult(mode, 'Error: ' + e.message);
+      })
+      .finally(function() {
+        setAiLoading(false);
+      });
+    }
+
+    function copyAiResult() {
+      var text = document.getElementById('aiResultText').textContent;
+      var notesEl = document.getElementById('notes');
+      if (notesEl) {
+        notesEl.value = text;
+        notesEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var btn = document.getElementById('aiCopyBtn');
+        btn.textContent = '✅ Copied to Remarks!';
+        setTimeout(function() { btn.textContent = '📋 Copy to Remarks'; }, 2000);
+      }
+    }
+  </script>
+
+  <div th:replace="~{chatbot-fragment :: chatbot}"></div>
+</body>
+</html>

@@ -1,0 +1,564 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{var _t=localStorage.getItem('eduadvisor-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advice — Student Advisory Portal</title>
+  <style>
+    :root {
+      --primary:       #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #eef2ff;
+      --bg:     #f8fafc;
+      --surface:#ffffff;
+      --border: #e2e8f0;
+      --text:   #1e293b;
+      --muted:  #64748b;
+      --radius: 14px;
+      --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.04);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,.1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+      padding: 24px;
+      align-items: start;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: #ffffff;
+      border: 1px solid rgba(63, 97, 255, 0.12);
+      border-radius: 28px;
+      padding: 28px 20px;
+      box-shadow: 0 24px 60px rgba(47, 67, 120, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      align-self: start;
+      position: sticky;
+      top: 24px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-dot { width: 14px; height: 14px; border-radius: 50%; background: #3f61ff; }
+    .brand-title { font-size: 1.05rem; font-weight: 700; }
+
+    .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .nav-item { border-radius: 18px; overflow: hidden; }
+    .nav-link {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      text-decoration: none;
+      color: #1f2b44;
+      font-weight: 600;
+      background: #f9fbff;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: rgba(63, 97, 255, 0.12);
+      color: #1f2b44;
+      transform: translateX(2px);
+    }
+    .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; color: #3f61ff; }
+
+    .profile-card {
+      padding: 18px;
+      border-radius: 22px;
+      background: #f8faff;
+      border: 1px solid rgba(63, 97, 255, 0.08);
+    }
+    .profile-card h2 { margin: 0 0 6px; font-size: 1.1rem; }
+    .profile-card p  { margin: 0; color: #6d7a98; font-size: 0.95rem; }
+
+    /* ── Main column ── */
+    .main { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+
+    /* ── Hero banner ── */
+    .hero-banner {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #9333ea 100%);
+      border-radius: 20px;
+      padding: 30px 34px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-banner::before {
+      content: '';
+      position: absolute; top: -50px; right: -50px;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: rgba(255,255,255,.07);
+      pointer-events: none;
+    }
+    .hero-banner::after {
+      content: '';
+      position: absolute; bottom: -60px; right: 90px;
+      width: 140px; height: 140px; border-radius: 50%;
+      background: rgba(255,255,255,.05);
+      pointer-events: none;
+    }
+    .hero-text h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; }
+    .hero-text p  { opacity: .85; font-size: .93rem; max-width: 360px; }
+
+    .hero-stats { display: flex; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
+    .stat-pill {
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 12px;
+      padding: 12px 18px;
+      text-align: center;
+      min-width: 88px;
+      backdrop-filter: blur(4px);
+    }
+    .stat-pill strong { display: block; font-size: 1.35rem; font-weight: 700; line-height: 1; }
+    .stat-pill span   { font-size: .73rem; opacity: .82; display: block; margin-top: 4px; }
+
+    /* ── Weekly focus ── */
+    .focus-card {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border: 1px solid #fde68a;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .focus-icon { font-size: 34px; flex-shrink: 0; }
+    .focus-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #92400e; margin-bottom: 3px; }
+    .focus-title { font-size: 1.02rem; font-weight: 700; color: #78350f; }
+    .focus-desc  { font-size: .86rem; color: #92400e; margin-top: 3px; line-height: 1.5; }
+
+    /* ── Section heading ── */
+    .section-heading {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-heading h2 { font-size: 1.05rem; font-weight: 700; }
+    .section-heading span { font-size: .8rem; color: var(--muted); }
+
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-btn {
+      padding: 7px 17px;
+      border-radius: 99px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+
+    /* ── Advice cards ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 14px;
+    }
+
+    .advice-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 20px 18px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 10px;
+      position: relative; overflow: hidden;
+      transition: box-shadow .18s, transform .18s;
+    }
+    .advice-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+    .advice-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; width: 4px; height: 100%;
+    }
+    .advice-card[data-cat="academic"]::before  { background: #4f46e5; }
+    .advice-card[data-cat="career"]::before    { background: #059669; }
+    .advice-card[data-cat="wellbeing"]::before { background: #f59e0b; }
+    .advice-card[data-cat="planning"]::before  { background: #0891b2; }
+
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .cat-badge {
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; padding: 3px 9px; border-radius: 99px;
+    }
+    .cat-badge.academic  { background: #eef2ff; color: #4f46e5; }
+    .cat-badge.career    { background: #d1fae5; color: #059669; }
+    .cat-badge.wellbeing { background: #fef3c7; color: #b45309; }
+    .cat-badge.planning  { background: #e0f2fe; color: #0369a1; }
+    .card-icon { font-size: 24px; }
+
+    .advice-card h3 { font-size: .95rem; font-weight: 700; line-height: 1.35; }
+    .advice-card p  { font-size: .85rem; color: var(--muted); line-height: 1.6; flex: 1; }
+    .card-action {
+      font-size: 13px; font-weight: 600; color: var(--primary);
+      background: none; border: none; cursor: pointer; padding: 0;
+      display: inline-flex; align-items: center; gap: 3px;
+      transition: gap .12s;
+    }
+    .card-action:hover { gap: 7px; }
+
+    /* ── Advisor messages ── */
+    .messages-list { display: flex; flex-direction: column; gap: 10px; }
+    .message-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 15px 18px;
+      display: flex; gap: 13px; align-items: flex-start;
+      box-shadow: var(--shadow);
+      transition: box-shadow .15s;
+    }
+    .message-card:hover { box-shadow: var(--shadow-lg); }
+    .message-card.unread { border-left: 3px solid var(--primary); }
+
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff;
+      flex-shrink: 0; letter-spacing: .03em;
+    }
+    .av-purple { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+    .av-green  { background: linear-gradient(135deg, #059669, #0d9488); }
+    .av-blue   { background: linear-gradient(135deg, #0891b2, #0369a1); }
+
+    .msg-body { flex: 1; min-width: 0; }
+    .msg-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 1px; }
+    .msg-sender { font-size: .9rem; font-weight: 700; }
+    .msg-time   { font-size: .76rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .msg-role   { font-size: .76rem; color: var(--muted); margin-bottom: 5px; }
+    .msg-text   { font-size: .86rem; color: var(--muted); line-height: 1.55; }
+    .unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); margin-top: 7px; flex-shrink: 0; }
+
+    /* ── Ask Advisor ── */
+    .ask-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px 28px;
+      box-shadow: var(--shadow);
+    }
+    .ask-section h2 { font-size: 1.02rem; font-weight: 700; margin-bottom: 5px; }
+    .ask-section > p { font-size: .86rem; color: var(--muted); margin-bottom: 16px; }
+
+    .quick-topics { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
+    .topic-chip {
+      padding: 6px 12px; border-radius: 99px;
+      background: var(--primary-light); color: var(--primary);
+      font-size: 12.5px; font-weight: 500; cursor: pointer; border: none;
+      transition: background .13s;
+    }
+    .topic-chip:hover { background: #c7d2fe; }
+
+    .ask-form { display: flex; flex-direction: column; gap: 12px; }
+    .ask-form textarea {
+      border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 11px 13px; font-size: 14px; font-family: inherit;
+      color: var(--text); resize: vertical; outline: none; min-height: 100px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .ask-form textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+    .ask-form textarea::placeholder { color: #a0aec0; }
+
+    .ask-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .ask-footer small { font-size: .79rem; color: var(--muted); }
+
+    .btn-send {
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 9px;
+      padding: 10px 22px; font-size: 13.5px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: background .15s, transform .15s;
+    }
+    .btn-send:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 26px; right: 26px;
+      background: #1e293b; color: #fff;
+      padding: 13px 20px; border-radius: 12px;
+      font-size: 14px; font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,.18);
+      display: flex; align-items: center; gap: 10px;
+      transform: translateY(70px); opacity: 0;
+      transition: transform .28s ease, opacity .28s ease;
+      z-index: 500;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+    }
+    @media (max-width: 580px) {
+      .hero-banner { flex-direction: column; padding: 22px 18px; }
+      .hero-stats { width: 100%; justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Student Advice</div>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span>Home</a></li>
+        <li class="nav-item"><a href="advice.html" class="nav-link active"><span class="nav-icon">🎯</span>Advice</a></li>
+        <li class="nav-item"><a href="schedule.html" class="nav-link"><span class="nav-icon">📅</span>Schedule</a></li>
+        <li class="nav-item"><a href="resources.html" class="nav-link"><span class="nav-icon">📚</span>Resources</a></li>
+        <li class="nav-item"><a href="counselling.html" class="nav-link"><span class="nav-icon">🗓️</span>Counselling Hours</a></li>
+        <li class="nav-item"><a href="CreaditTransfer.html" class="nav-link"><span class="nav-icon">🔄</span>Credit Transfer</a></li>
+        <li class="nav-item"><a href="my-courses.html" class="nav-link"><span class="nav-icon">📋</span>My Courses</a></li>
+        <li class="nav-item"><a href="grade-calculator.html" class="nav-link"><span class="nav-icon">🎓</span>Grade Calculator</a></li>
+        <li class="nav-item"><a href="learning-gap.html" class="nav-link"><span class="nav-icon">🧠</span>Learning Gaps</a></li>
+        <li class="nav-item"><a href="https://diuqbank.com/#google_vignette" class="nav-link" target="_blank" rel="noopener noreferrer"><span class="nav-icon">📝</span>Q-Bank</a></li>
+        <li class="nav-item"><a href="discussion.html"     class="nav-link"><span class="nav-icon">💬</span>Discussion</a></li>
+        <li class="nav-item"><a href="my-papers.html"    class="nav-link"><span class="nav-icon">📄</span>My Papers</a></li>
+        <li class="nav-item"><a href="lost-found.html"   class="nav-link"><span class="nav-icon">🔍</span>Lost &amp; Found</a></li>
+        <li class="nav-item"><a href="profile.html"        class="nav-link"><span class="nav-icon">👤</span>Profile</a></li>
+        <li class="nav-item"><a href="/logout"             class="nav-link"><span class="nav-icon">🚪</span>Logout</a></li>
+      </ul>
+      <div class="profile-card">
+        <h2 th:text="${studentName}">Jane Doe</h2>
+        <p>Student ID: <span th:text="${studentId}">S12345</span></p>
+        <a href="/logout" style="display:block;margin-top:10px;font-size:0.82rem;color:#6d7a98;text-decoration:none;">⬅ Logout</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- Hero -->
+      <div class="hero-banner">
+        <div class="hero-text">
+          <h1>Your Advice Hub, Jane</h1>
+          <p>Personalized guidance to help you thrive academically and beyond.</p>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-pill">
+            <strong>3.8</strong>
+            <span>Current GPA</span>
+          </div>
+          <div class="stat-pill">
+            <strong>Year 3</strong>
+            <span>Program Level</span>
+          </div>
+          <div class="stat-pill">
+            <strong>Mon</strong>
+            <span>Next Session</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly Focus -->
+      <div class="focus-card">
+        <div class="focus-icon">🔥</div>
+        <div>
+          <div class="focus-label">This Week's Focus</div>
+          <div class="focus-title">Semester Mid-Point Check-In</div>
+          <div class="focus-desc">You're halfway through — the perfect time to review progress, close any gaps, and set up a strong second half before finals pressure builds.</div>
+        </div>
+      </div>
+
+      <!-- Advice Cards -->
+      <div>
+        <div class="section-heading">
+          <h2>Advice for You</h2>
+          <span id="cardCount">10 tips</span>
+        </div>
+        <div class="filter-bar" id="filterBar">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="academic">Academic</button>
+          <button class="filter-btn" data-filter="career">Career</button>
+          <button class="filter-btn" data-filter="wellbeing">Wellbeing</button>
+          <button class="filter-btn" data-filter="planning">Planning</button>
+        </div>
+        <div class="cards-grid" id="cardsGrid"></div>
+      </div>
+
+      <!-- Advisor Messages -->
+      <div>
+        <div class="section-heading">
+          <h2>Advisor Messages</h2>
+          <span>2 unread</span>
+        </div>
+        <div class="messages-list">
+          <div class="message-card unread">
+            <div class="avatar av-purple">DR</div>
+            <div class="msg-body">
+              <div class="msg-header">
+                <span class="msg-sender">Dr. Rachel Nguyen</span>
+                <span class="msg-time">Today, 9:14 AM</span>
+              </div>
+              <div class="msg-role">Academic Advisor</div>
+              <div class="msg-text">Hi Jane, a quick reminder that course registration for Fall opens next Wednesday. I'd strongly recommend securing CS401 and the Ethics elective early — both fill up within hours. Let me know if you'd like to go over your plan beforehand.</div>
+            </div>
+            <div class="unread-dot"></div>
+          </div>
+
+          <div class="message-card unread">
+            <div class="avatar av-green">PW</div>
+            <div class="msg-body">
+              <div class="msg-header">
+                <span class="msg-sender">Mr. Paul Winters</span>
+                <span class="msg-time">Yesterday, 2:30 PM</span>
+              </div>
+              <div class="msg-role">Career Services</div>
+              <div class="msg-text">The TechCorp internship portal is now open. Based on your profile you're a strong fit for their software engineering track. Deadline is May 20 — send me your CV by Thursday and I'll review it before you submit.</div>
+            </div>
+            <div class="unread-dot"></div>
+          </div>
+
+          <div class="message-card">
+            <div class="avatar av-blue">SA</div>
+            <div class="msg-body">
+              <div class="msg-header">
+                <span class="msg-sender">Student Affairs Office</span>
+                <span class="msg-time">Apr 28</span>
+              </div>
+              <div class="msg-role">General Notice</div>
+              <div class="msg-text">Your Spring semester academic standing review is complete — you're in good standing. Keep it up!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ask Advisor -->
+      <div class="ask-section">
+        <h2>Ask Your Advisor</h2>
+        <p>Type your question below and your advisor will respond within one business day.</p>
+        <div class="quick-topics">
+          <button class="topic-chip" onclick="setTopic('Course selection advice for next semester')">Course Selection</button>
+          <button class="topic-chip" onclick="setTopic('Internship or job application help')">Internships</button>
+          <button class="topic-chip" onclick="setTopic('Study strategy for upcoming exams')">Study Strategy</button>
+          <button class="topic-chip" onclick="setTopic('Credit transfer query')">Credit Transfer</button>
+          <button class="topic-chip" onclick="setTopic('General academic concern')">Other</button>
+        </div>
+        <div class="ask-form">
+          <textarea id="advisorQuestion" placeholder="e.g. I'm thinking of switching my minor from Economics to Data Science — can we discuss whether my current credits support that?"></textarea>
+          <div class="ask-footer">
+            <small>Avg. response time: <strong>under 24 hrs</strong></small>
+            <button class="btn-send" onclick="sendQuestion()">Send Question →</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="toast" id="toast">✓ Your question has been sent to your advisor.</div>
+
+  <script>
+    const adviceData = [
+      { cat:'academic',  icon:'📖', title:'Visit Office Hours Proactively',
+        body:"Don't wait until you're struggling. Regular check-ins build rapport with professors and sharpen your understanding of exactly what's expected in assessments.",
+        action:'Find office hours →' },
+      { cat:'academic',  icon:'⏱️', title:'Use the Pomodoro Technique',
+        body:'25 minutes of focused work, 5-minute break, repeat. After four rounds take a longer break. Simple, research-backed, and surprisingly hard to argue with.',
+        action:'Try it this week →' },
+      { cat:'academic',  icon:'📋', title:'Re-Read Your Syllabus Weekly',
+        body:"Most students only read it once. Scanning it each week surfaces upcoming deadlines before they sneak up, and reminds you where the grade weight actually sits.",
+        action:'Open schedule →' },
+      { cat:'career',    icon:'💼', title:'Polish Your LinkedIn Now',
+        body:'Recruiters search LinkedIn constantly. A complete profile with a clear headline and pinned projects works for you passively — even when you are in class.',
+        action:'Review checklist →' },
+      { cat:'career',    icon:'🎪', title:'Attend Career Fairs Early',
+        body:"Go even when you're not job-hunting. Familiarity with the format removes anxiety later, and every conversation is a network node you'll be glad to have.",
+        action:'View upcoming events →' },
+      { cat:'career',    icon:'📄', title:'Start Your CV This Semester',
+        body:"Don't save CV-writing for final year. A living document you update now — with projects, roles, skills — is infinitely easier to refine than building from scratch under pressure.",
+        action:'Download template →' },
+      { cat:'wellbeing', icon:'😴', title:'Protect Your Sleep',
+        body:'Cognitive performance degrades noticeably on less than 7 hours. Sleep consolidates memory — trading it for late-night cramming is almost always a losing deal.',
+        action:'Learn more →' },
+      { cat:'wellbeing', icon:'🧘', title:'Schedule Real Recovery',
+        body:"Burnout isn't caused by working hard — it's caused by never stopping. Block at least one hour daily with zero academic tasks. Treat it with the same seriousness as a lecture.",
+        action:'Block time now →' },
+      { cat:'planning',  icon:'🗺️', title:'Map Your Remaining Credits',
+        body:'Sit down and work out exactly which courses you still need to graduate. Surprises in final year are common and entirely preventable with one 30-minute planning session.',
+        action:'Check credit map →' },
+      { cat:'planning',  icon:'🎯', title:'Set 3 Goals Each Semester',
+        body:'One academic, one career, one personal. Writing goals down triples completion rates. Keep them somewhere visible — your phone lock screen works better than a notebook.',
+        action:'Write yours →' },
+    ];
+
+    function renderCards(filter) {
+      const grid  = document.getElementById('cardsGrid');
+      const count = document.getElementById('cardCount');
+      const list  = filter === 'all' ? adviceData : adviceData.filter(c => c.cat === filter);
+
+      count.textContent = list.length + ' tip' + (list.length !== 1 ? 's' : '');
+
+      grid.innerHTML = list.map(c => `
+        <div class="advice-card" data-cat="${c.cat}">
+          <div class="card-top">
+            <span class="cat-badge ${c.cat}">${c.cat}</span>
+            <span class="card-icon">${c.icon}</span>
+          </div>
+          <h3>${c.title}</h3>
+          <p>${c.body}</p>
+          <button class="card-action">${c.action}</button>
+        </div>`).join('');
+    }
+
+    document.getElementById('filterBar').addEventListener('click', e => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCards(btn.dataset.filter);
+    });
+
+    function setTopic(text) {
+      const el = document.getElementById('advisorQuestion');
+      el.value = text;
+      el.focus();
+      el.setSelectionRange(text.length, text.length);
+    }
+
+    function sendQuestion() {
+      const el = document.getElementById('advisorQuestion');
+      if (!el.value.trim()) {
+        el.focus();
+        el.style.borderColor = '#ef4444';
+        setTimeout(() => { el.style.borderColor = ''; }, 1400);
+        return;
+      }
+      el.value = '';
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3200);
+    }
+
+    renderCards('all');
+  </script>
+  <div th:replace="~{chatbot-fragment :: chatbot}"></div>
+</body>
+</html>

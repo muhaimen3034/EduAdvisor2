@@ -1,0 +1,1028 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{var _t=localStorage.getItem('eduadvisor-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learning Gap Tracker – EduAdvisor</title>
+  <style>
+    :root {
+      --bg: #eef3ff; --panel: #fff; --accent: #3f61ff;
+      --text: #1f2b44; --muted: #6d7a98; --border: rgba(63,97,255,0.12);
+      --green: #16a34a; --red: #dc2626; --orange: #ea580c; --yellow: #ca8a04;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Inter", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #dbe4ff 0%, #eef3ff 55%, #f9fbff 100%);
+      color: var(--text); min-height: 100vh; }
+
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; gap: 24px; padding: 24px; }
+
+    /* ── Sidebar ── */
+    .sidebar { background: var(--panel); border: 1px solid var(--border); border-radius: 28px;
+      padding: 28px 20px; box-shadow: 0 24px 60px rgba(47,67,120,0.08);
+      display: flex; flex-direction: column; gap: 24px;
+      position: sticky; top: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); }
+    .brand-title { font-size: 1.05rem; font-weight: 700; }
+    .nav-list { list-style: none; display: grid; gap: 12px; }
+    .nav-item { border-radius: 18px; overflow: hidden; }
+    .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+      text-decoration: none; color: var(--text); font-weight: 600; background: #f9fbff;
+      transition: background 0.2s, transform 0.2s; }
+    .nav-link:hover, .nav-link.active { background: rgba(63,97,255,0.12); transform: translateX(2px); }
+    .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; color: var(--accent); }
+    .profile-card { padding: 18px; border-radius: 22px; background: #f8faff; border: 1px solid rgba(63,97,255,0.08); }
+    .profile-card h2 { font-size: 1.1rem; margin-bottom: 6px; }
+    .profile-card p { color: var(--muted); font-size: 0.95rem; }
+
+    /* ── Main ── */
+    .main { display: flex; flex-direction: column; gap: 24px; }
+
+    .page-header { background: var(--panel); border-radius: 24px; padding: 28px 32px;
+      box-shadow: 0 4px 20px rgba(47,67,120,0.06); }
+    .page-header h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; }
+    .page-header p { color: var(--muted); font-size: 0.97rem; }
+
+    /* ── Summary stat bar ── */
+    .stat-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .stat-card { background: var(--panel); border-radius: 20px; padding: 20px 24px;
+      box-shadow: 0 4px 16px rgba(47,67,120,0.06); }
+    .stat-val { font-size: 2rem; font-weight: 900; }
+    .stat-val.green { color: var(--green); }
+    .stat-val.red { color: var(--red); }
+    .stat-val.orange { color: var(--orange); }
+    .stat-val.blue { color: var(--accent); }
+    .stat-label { font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-top: 4px; }
+
+    /* ── Tabs ── */
+    .tabs { background: var(--panel); border-radius: 20px; padding: 6px;
+      box-shadow: 0 4px 16px rgba(47,67,120,0.06); display: flex; gap: 4px; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; border-radius: 15px; cursor: pointer;
+      font-size: 0.9rem; font-weight: 700; background: transparent; color: var(--muted); transition: all 0.2s; }
+    .tab-btn.active { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(63,97,255,0.35); }
+    .tab-btn:hover:not(.active) { background: rgba(63,97,255,0.08); color: var(--accent); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cards ── */
+    .card { background: var(--panel); border-radius: 24px; padding: 28px 32px;
+      box-shadow: 0 4px 20px rgba(47,67,120,0.06); }
+    .card h2 { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
+    .card .subtitle { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+
+    /* ── Form ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.85rem; font-weight: 700; }
+    .form-group select, .form-group input, .form-group textarea {
+      padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 12px;
+      font-size: 0.95rem; color: var(--text); background: #f9fbff; outline: none;
+      transition: border-color 0.2s; font-family: inherit; }
+    .form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+    .form-group.full { grid-column: 1 / -1; }
+    .score-row { display: flex; align-items: center; gap: 10px; }
+    .score-row input { flex: 1; }
+    .score-slash { font-weight: 800; color: var(--muted); }
+    .score-pct { font-size: 0.85rem; font-weight: 700; color: var(--accent); min-width: 48px; }
+
+    .btn { padding: 12px 26px; border-radius: 13px; font-size: 0.92rem; font-weight: 700;
+      cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #2d4edb; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(63,97,255,0.3); }
+    .btn-primary:disabled { background: rgba(63,97,255,0.35); cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-danger { background: rgba(220,38,38,0.1); color: var(--red); }
+    .btn-danger:hover { background: rgba(220,38,38,0.18); }
+    .btn-ai { background: linear-gradient(135deg, #6d28d9, #3f61ff); color: #fff; padding: 16px 32px; font-size: 1rem; }
+    .btn-ai:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(63,97,255,0.35); }
+    .btn-ai:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── Score history table ── */
+    .scores-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .scores-table th { background: #f8faff; font-size: 0.8rem; font-weight: 700; color: var(--muted);
+      padding: 10px 14px; text-align: left; border-bottom: 1.5px solid var(--border); }
+    .scores-table td { padding: 11px 14px; border-bottom: 1px solid rgba(63,97,255,0.06); font-size: 0.88rem; }
+    .scores-table tr:last-child td { border-bottom: none; }
+    .scores-table tr:hover td { background: #f9fbff; }
+    .pct-pill { padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 800; }
+    .pct-pill.critical { background: rgba(220,38,38,0.1); color: var(--red); }
+    .pct-pill.warning  { background: rgba(234,88,12,0.1);  color: var(--orange); }
+    .pct-pill.good     { background: rgba(22,163,74,0.1);   color: var(--green); }
+    .delete-btn { background: none; border: none; cursor: pointer; color: var(--muted);
+      font-size: 1rem; padding: 4px 8px; border-radius: 8px; transition: all 0.2s; }
+    .delete-btn:hover { color: var(--red); background: rgba(220,38,38,0.08); }
+    .empty-msg { text-align: center; padding: 40px; color: var(--muted); font-size: 0.9rem; }
+
+    /* ── Gap analysis: course cards ── */
+    .gap-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .gap-card { border-radius: 20px; padding: 22px; border: 2px solid var(--border); background: #f9fbff; }
+    .gap-card.critical { border-color: rgba(220,38,38,0.35); background: rgba(220,38,38,0.03); }
+    .gap-card.warning  { border-color: rgba(234,88,12,0.35);  background: rgba(234,88,12,0.03); }
+    .gap-card.good     { border-color: rgba(22,163,74,0.25);   background: rgba(22,163,74,0.03); }
+    .gap-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .gap-course-name { font-size: 0.97rem; font-weight: 800; }
+    .gap-course-code { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .gap-status { font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; }
+    .gap-status.critical { background: rgba(220,38,38,0.12); color: var(--red); }
+    .gap-status.warning  { background: rgba(234,88,12,0.12);  color: var(--orange); }
+    .gap-status.good     { background: rgba(22,163,74,0.12);   color: var(--green); }
+    .assessment-row { margin-bottom: 10px; }
+    .assessment-label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; }
+    .assessment-label span:first-child { font-weight: 600; color: var(--muted); }
+    .assessment-label span:last-child { font-weight: 800; }
+    .progress-bar { height: 7px; background: rgba(63,97,255,0.1); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+    .fill-critical { background: var(--red); }
+    .fill-warning  { background: var(--orange); }
+    .fill-good     { background: var(--green); }
+    .no-gap-msg { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .no-gap-msg .big { font-size: 3rem; }
+    .no-gap-msg p { margin-top: 10px; font-size: 0.9rem; }
+
+    /* ── AI Plan ── */
+    .plan-hero { text-align: center; padding: 32px; }
+    .plan-hero .icon { font-size: 4rem; margin-bottom: 16px; }
+    .plan-hero h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+    .plan-hero p { color: var(--muted); max-width: 500px; margin: 0 auto 28px; font-size: 0.92rem; line-height: 1.6; }
+    .plan-output { display: none; margin-top: 24px; }
+    .plan-output.visible { display: block; }
+    .plan-section { margin-bottom: 22px; }
+    .plan-section-title { font-size: 1rem; font-weight: 800; color: var(--accent); margin-bottom: 10px;
+      padding-bottom: 6px; border-bottom: 2px solid rgba(63,97,255,0.12); }
+    .plan-content { font-size: 0.9rem; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
+    .plan-loading { text-align: center; padding: 40px; color: var(--muted); }
+    .spinner { width: 36px; height: 36px; border: 4px solid rgba(63,97,255,0.15);
+      border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: #1e293b; color: #fff;
+      padding: 12px 22px; border-radius: 14px; font-size: 0.88rem; font-weight: 600;
+      opacity: 0; transform: translateY(10px); transition: all 0.3s; z-index: 9999; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .hidden { display: none !important; }
+
+    /* ── Profile Analysis Tab ── */
+    .pa-url-badge { display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:700; }
+    .pa-layout    { display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start; }
+    .pa-radar-card{ display:flex;flex-direction:column; }
+    .pa-3col      { display:grid;grid-template-columns:repeat(3,1fr);gap:18px; }
+    .pa-summary   { display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:center; }
+    .pa-chip      { padding:4px 12px;border-radius:20px;font-size:0.78rem;font-weight:800; }
+    .pa-chip-s    { background:rgba(22,163,74,0.1);  color:#16a34a; }
+    .pa-chip-a    { background:rgba(234,88,12,0.1);  color:#ea580c; }
+    .pa-chip-g    { background:rgba(220,38,38,0.1);  color:#dc2626; }
+    .pa-score-row { display:grid;grid-template-columns:110px 1fr 42px;gap:8px;align-items:center;margin-bottom:10px; }
+    .pa-lbl       { font-size:0.8rem;font-weight:700; }
+    .pa-track     { height:8px;border-radius:20px;background:rgba(63,97,255,0.08);overflow:hidden; }
+    .pa-fill      { height:100%;border-radius:20px;transition:width .6s; }
+    .pa-val       { font-size:0.8rem;font-weight:800;text-align:right; }
+    .pa-list      { list-style:none;display:flex;flex-direction:column;gap:8px; }
+    .pa-list li   { font-size:0.88rem;line-height:1.5;padding-left:20px;position:relative; }
+    .pa-list-strength li::before { content:"✅";position:absolute;left:0; }
+    .pa-list-gap      li::before { content:"⚠️";position:absolute;left:0; }
+    .pa-list-rec      li::before { content:"💡";position:absolute;left:0; }
+    .pa-summary-box   { background:#f9fbff;border-radius:12px;padding:14px 16px;font-size:0.88rem;line-height:1.7;color:var(--text); }
+    .pa-gh-grid   { display:grid;grid-template-columns:repeat(3,1fr);gap:10px; }
+    .pa-gh-stat   { background:#f8faff;border-radius:12px;padding:12px;text-align:center; }
+    .pa-gh-stat .val { font-size:1.4rem;font-weight:900;color:var(--accent); }
+    .pa-gh-stat .lbl { font-size:0.72rem;color:var(--muted);margin-top:2px;font-weight:700; }
+    @media(max-width:900px){ .pa-layout{grid-template-columns:1fr;} .pa-3col{grid-template-columns:1fr;} }
+
+    @media (max-width: 1000px) {
+      .layout { grid-template-columns: 1fr; padding: 16px; }
+      .stat-bar { grid-template-columns: repeat(2, 1fr); }
+      .form-grid { grid-template-columns: 1fr; }
+      .gap-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-title">Student Advice</div>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span>Home</a></li>
+      <li class="nav-item"><a href="advice.html" class="nav-link"><span class="nav-icon">🎯</span>Advice</a></li>
+      <li class="nav-item"><a href="schedule.html" class="nav-link"><span class="nav-icon">📅</span>Schedule</a></li>
+      <li class="nav-item"><a href="resources.html" class="nav-link"><span class="nav-icon">📚</span>Resources</a></li>
+      <li class="nav-item"><a href="counselling.html" class="nav-link"><span class="nav-icon">🗓️</span>Counselling Hours</a></li>
+      <li class="nav-item"><a href="CreaditTransfer.html" class="nav-link"><span class="nav-icon">🔄</span>Credit Transfer</a></li>
+      <li class="nav-item"><a href="my-courses.html" class="nav-link"><span class="nav-icon">📋</span>My Courses</a></li>
+      <li class="nav-item"><a href="grade-calculator.html" class="nav-link"><span class="nav-icon">🎓</span>Grade Calculator</a></li>
+      <li class="nav-item"><a href="learning-gap.html" class="nav-link active"><span class="nav-icon">🧠</span>Learning Gaps</a></li>
+      <li class="nav-item"><a href="/study-coach.html" class="nav-link"><span class="nav-icon">⚡</span>AI Study Coach</a></li>
+      <li class="nav-item"><a href="https://diuqbank.com/#google_vignette" class="nav-link" target="_blank" rel="noopener noreferrer"><span class="nav-icon">📝</span>Q-Bank</a></li>
+      <li class="nav-item"><a href="discussion.html" class="nav-link"><span class="nav-icon">💬</span>Discussion</a></li>
+      <li class="nav-item"><a href="my-papers.html" class="nav-link"><span class="nav-icon">📄</span>My Papers</a></li>
+      <li class="nav-item"><a href="lost-found.html" class="nav-link"><span class="nav-icon">🔍</span>Lost &amp; Found</a></li>
+      <li class="nav-item"><a href="profile.html" class="nav-link"><span class="nav-icon">👤</span>Profile</a></li>
+      <li class="nav-item"><a href="/logout" class="nav-link"><span class="nav-icon">🚪</span>Logout</a></li>
+    </ul>
+    <div class="profile-card">
+      <h2 th:text="${studentName}">Student</h2>
+      <p>ID: <span th:text="${studentId}">S12345</span></p>
+      <a href="/logout" style="display:block;margin-top:10px;font-size:0.82rem;color:#6d7a98;text-decoration:none;">⬅ Logout</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- Header -->
+    <div class="page-header">
+      <h1>🧠 Learning Gap Tracker</h1>
+      <p>Log your assessment scores, detect weak areas automatically, and get a personalized AI-powered study plan.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-bar">
+      <div class="stat-card">
+        <div class="stat-val blue" id="stat-total">0</div>
+        <div class="stat-label">Scores Logged</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val red" id="stat-critical">0</div>
+        <div class="stat-label">Critical Gaps (&lt;50%)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val orange" id="stat-warning">0</div>
+        <div class="stat-label">Warnings (50–64%)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val green" id="stat-good">0</div>
+        <div class="stat-label">On Track (≥65%)</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('log')">📊 Log Scores</button>
+      <button class="tab-btn" onclick="switchTab('gaps')">🔍 Gap Analysis</button>
+      <button class="tab-btn" onclick="switchTab('plan')">🤖 AI Learning Plan</button>
+      <button class="tab-btn" onclick="switchTab('profile')">🔗 Profile Analysis</button>
+    </div>
+
+    <!-- ── Tab 1: Log Scores ── -->
+    <div class="tab-panel active" id="tab-log">
+      <div class="card">
+        <h2>Add Assessment Score</h2>
+        <p class="subtitle">Record your marks for any quiz, mid exam, assignment, or final for each enrolled course.</p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Course</label>
+            <select id="sel-course">
+              <option value="">— Select a course —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assessment Type</label>
+            <select id="sel-type">
+              <option value="QUIZ">Quiz</option>
+              <option value="MID">Mid Exam</option>
+              <option value="ASSIGNMENT">Assignment</option>
+              <option value="FINAL">Final Exam</option>
+              <option value="PRESENTATION">Presentation</option>
+              <option value="ATTENDANCE">Attendance</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Your Score</label>
+            <div class="score-row">
+              <input type="number" id="inp-score" placeholder="e.g. 7" min="0" step="0.5" oninput="updatePct()">
+              <span class="score-slash">/</span>
+              <input type="number" id="inp-max" placeholder="out of (e.g. 10)" min="0.1" step="0.5" value="10" oninput="updatePct()">
+              <span class="score-pct" id="pct-preview">—</span>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>Notes (optional)</label>
+            <textarea id="inp-notes" rows="2" placeholder="e.g. Struggled with linked lists / Chapter 3 weak"></textarea>
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-primary" id="btn-save" onclick="saveScore()">Save Score</button>
+        </div>
+      </div>
+
+      <!-- History table -->
+      <div class="card" style="margin-top:0;">
+        <h2>Score History</h2>
+        <p class="subtitle">All your logged assessment scores. Click 🗑 to remove an entry.</p>
+        <div id="history-container">
+          <div class="empty-msg">Loading your scores…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tab 2: Gap Analysis ── -->
+    <div class="tab-panel" id="tab-gaps">
+      <div class="card">
+        <h2>Performance by Course</h2>
+        <p class="subtitle">Courses are flagged automatically: 🔴 Critical (&lt;50%) · 🟠 Warning (50–64%) · 🟢 On Track (≥65%)</p>
+        <div class="gap-grid" id="gap-grid">
+          <div class="empty-msg" style="grid-column:1/-1;">Log some scores first to see your gap analysis.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tab 3: AI Learning Plan ── -->
+    <div class="tab-panel" id="tab-plan">
+      <div class="card">
+        <div class="plan-hero">
+          <div class="icon">🤖</div>
+          <h2>AI-Powered Learning Plan</h2>
+          <p>Click below and our AI advisor will analyse your assessment data, identify your weakest areas, and generate a personalised 4-week study plan just for you.</p>
+          <button class="btn btn-ai" id="btn-gen-plan" onclick="generatePlan()">✨ Generate My Learning Plan</button>
+        </div>
+
+        <div id="plan-loading" class="plan-loading hidden">
+          <div class="spinner"></div>
+          <p>Analysing your scores and building your plan…</p>
+        </div>
+
+        <div class="plan-output" id="plan-output">
+          <div id="plan-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tab 4: Profile Analysis ── -->
+    <div class="tab-panel" id="tab-profile">
+
+      <!-- Gate: LinkedIn required -->
+      <div class="card" id="pa-gate" style="display:none;">
+        <div style="text-align:center;padding:16px 0 8px;">
+          <div style="font-size:3rem;margin-bottom:12px;">🔗</div>
+          <h2>Connect Your Profiles</h2>
+          <p class="subtitle">LinkedIn is required for AI profile analysis. GitHub is optional but adds technical skill insights.</p>
+        </div>
+        <div class="form-grid" style="max-width:600px;margin:0 auto;">
+          <div class="form-group full">
+            <label>LinkedIn Profile URL <span style="color:var(--red);">*</span></label>
+            <input id="pa-linkedin-inp" type="url" placeholder="https://linkedin.com/in/your-username" />
+          </div>
+          <div class="form-group full">
+            <label>GitHub Profile URL <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+            <input id="pa-github-inp" type="url" placeholder="https://github.com/your-username" />
+          </div>
+          <div class="form-group full">
+            <label>Your Activities &amp; Certifications <span style="color:var(--accent);font-weight:600;">— helps AI score Projects, Workshops, Bootcamps &amp; Research accurately</span></label>
+            <textarea id="pa-activity-inp" rows="5" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:0.92rem;resize:vertical;font-family:inherit;background:var(--bg-card);color:var(--text);" placeholder="Briefly describe what you have on LinkedIn:
+• Projects: built a hospital management system, e-commerce mobile app
+• Workshops: Python for Data Science (Coursera, Mar 2024), Web Dev Bootcamp
+• Bootcamps: HackBridge Bootcamp (2 weeks, June 2024)
+• Research: Poster presentation on ML-based disease detection (ICICT 2024)
+• Certifications: AWS Cloud Practitioner, Meta React Developer"></textarea>
+            <p style="font-size:0.78rem;color:var(--muted);margin-top:4px;">The more detail you give, the more accurate your scores will be.</p>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:24px;">
+          <button class="btn btn-ai" id="pa-connect-btn" onclick="connectProfiles()">🔍 Analyse My Profile</button>
+        </div>
+      </div>
+
+      <!-- Analyzing spinner -->
+      <div class="card" id="pa-analyzing" style="display:none;">
+        <div class="plan-loading">
+          <div class="spinner"></div>
+          <p>AI is analysing your LinkedIn &amp; GitHub profiles… This may take 10–20 seconds.</p>
+        </div>
+      </div>
+
+      <!-- Results panel -->
+      <div id="pa-results" style="display:none;">
+
+        <!-- URL bar + refresh -->
+        <div class="card" style="padding:18px 28px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+              <span id="pa-li-badge" class="pa-url-badge" style="background:rgba(10,102,194,0.08);border:1px solid rgba(10,102,194,0.2);color:#0a66c2;"></span>
+              <span id="pa-gh-badge" class="pa-url-badge" style="background:rgba(30,30,30,0.06);border:1px solid rgba(30,30,30,0.15);color:#1f2b44;display:none;"></span>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-danger" style="font-size:0.82rem;padding:8px 16px;" onclick="showUpdateForm()">✏️ Update URLs</button>
+              <button class="btn btn-primary" style="font-size:0.82rem;padding:8px 16px;" id="pa-refresh-btn" onclick="refreshAnalysis()">🔄 Refresh Analysis</button>
+            </div>
+          </div>
+          <p id="pa-last-refreshed" style="margin:8px 0 0;font-size:0.78rem;color:var(--muted);"></p>
+        </div>
+
+        <!-- Update URL / Activity form (hidden by default) -->
+        <div class="card" id="pa-update-form" style="display:none;">
+          <h2 style="margin-bottom:16px;">Update Profile &amp; Activities</h2>
+          <div class="form-grid" style="max-width:600px;">
+            <div class="form-group full">
+              <label>LinkedIn URL <span style="color:var(--red);">*</span></label>
+              <input id="pa-update-li" type="url" placeholder="https://linkedin.com/in/..."/>
+            </div>
+            <div class="form-group full">
+              <label>GitHub URL <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+              <input id="pa-update-gh" type="url" placeholder="https://github.com/..."/>
+            </div>
+            <div class="form-group full">
+              <label>Your Activities &amp; Certifications <span style="color:var(--accent);font-weight:600;">— update to re-score Projects, Workshops, Bootcamps &amp; Research</span></label>
+              <textarea id="pa-update-act" rows="5" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:0.92rem;resize:vertical;font-family:inherit;background:var(--bg-card);color:var(--text);" placeholder="• Projects: ...&#10;• Workshops: ...&#10;• Bootcamps: ...&#10;• Research: ...&#10;• Certifications: ..."></textarea>
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="submitUpdateUrls()">🔍 Save &amp; Re-analyse</button>
+            <button class="btn" style="background:#f0f4ff;color:var(--accent);" onclick="hideUpdateForm()">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Activity description display card -->
+        <div class="card" id="pa-activity-card" style="display:none;background:linear-gradient(135deg,rgba(63,97,255,0.04),rgba(10,102,194,0.04));border:1px solid rgba(63,97,255,0.15);">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div style="flex:1;">
+              <h2 style="margin-bottom:8px;font-size:1rem;">📝 Activities Used for Scoring</h2>
+              <p id="pa-activity-text" style="font-size:0.88rem;color:var(--text);white-space:pre-wrap;margin:0;line-height:1.6;"></p>
+            </div>
+            <button class="btn btn-danger" style="font-size:0.78rem;padding:6px 12px;white-space:nowrap;" onclick="showUpdateForm()">✏️ Update</button>
+          </div>
+        </div>
+
+        <!-- Two-column layout: radar + detail -->
+        <div class="pa-layout">
+
+          <!-- Left: SVG radar -->
+          <div class="card pa-radar-card">
+            <h2 style="margin-bottom:4px;">Profile Radar</h2>
+            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:16px;">AI-analysed across 9 dimensions</p>
+            <div style="display:flex;justify-content:center;">
+              <svg id="paRadarSvg" viewBox="0 0 310 300" style="width:100%;max-width:300px;"></svg>
+            </div>
+            <div class="pa-summary" id="pa-summary"></div>
+          </div>
+
+          <!-- Right: score bars + insights -->
+          <div style="display:flex;flex-direction:column;gap:18px;">
+
+            <!-- Score breakdown -->
+            <div class="card">
+              <h2 style="margin-bottom:16px;">Score Breakdown</h2>
+              <div id="pa-score-bars"></div>
+            </div>
+
+            <!-- GitHub stats (if provided) -->
+            <div class="card" id="pa-gh-stats-card" style="display:none;">
+              <h2 style="margin-bottom:14px;">⚙️ GitHub Stats</h2>
+              <div class="pa-gh-grid" id="pa-gh-stats"></div>
+              <p id="pa-gh-languages" style="margin-top:12px;font-size:0.82rem;color:var(--muted);"></p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Strengths / Gaps / Recommendations -->
+        <div class="pa-3col">
+          <div class="card">
+            <h2 style="color:#16a34a;margin-bottom:14px;">✅ Strengths</h2>
+            <ul class="pa-list pa-list-strength" id="pa-strengths"></ul>
+          </div>
+          <div class="card">
+            <h2 style="color:#dc2626;margin-bottom:14px;">⚠️ Gaps</h2>
+            <ul class="pa-list pa-list-gap" id="pa-gaps"></ul>
+          </div>
+          <div class="card">
+            <h2 style="color:#2563eb;margin-bottom:14px;">💡 Recommendations</h2>
+            <ul class="pa-list pa-list-rec" id="pa-recs"></ul>
+          </div>
+        </div>
+
+        <!-- Summaries -->
+        <div class="card">
+          <h2 style="margin-bottom:14px;">🤖 AI Summary</h2>
+          <div id="pa-li-summary" class="pa-summary-box" style="border-left:3px solid #0a66c2;"></div>
+          <div id="pa-gh-summary" class="pa-summary-box" style="border-left:3px solid #1f2b44;margin-top:12px;display:none;"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div th:replace="~{chatbot-fragment :: chatbot}"></div>
+
+<script>
+  var allScores  = [];
+  var enrollments = [];
+
+  // ── Init ────────────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', function() {
+    loadEnrollments();
+    loadScores();
+  });
+
+  function loadEnrollments() {
+    fetch('/api/enrollments')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        enrollments = data;
+        var sel = document.getElementById('sel-course');
+        data.forEach(function(e) {
+          var opt = document.createElement('option');
+          opt.value = e.course.code;
+          opt.textContent = e.course.code + ' — ' + e.course.name;
+          opt.dataset.name = e.course.name;
+          sel.appendChild(opt);
+        });
+      })
+      .catch(function() {});
+  }
+
+  function loadScores() {
+    fetch('/api/gaps/scores')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        allScores = data;
+        updateStats();
+        renderHistory();
+        renderGapAnalysis();
+      })
+      .catch(function() {});
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  function pct(s) {
+    return s.maxScore === 0 ? 0 : (s.score / s.maxScore) * 100;
+  }
+  function statusClass(p) {
+    return p < 50 ? 'critical' : p < 65 ? 'warning' : 'good';
+  }
+  function statusLabel(p) {
+    return p < 50 ? '🔴 Critical' : p < 65 ? '🟠 Warning' : '🟢 On Track';
+  }
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2800);
+  }
+
+  function updatePct() {
+    var s = parseFloat(document.getElementById('inp-score').value);
+    var m = parseFloat(document.getElementById('inp-max').value);
+    var el = document.getElementById('pct-preview');
+    if (!isNaN(s) && !isNaN(m) && m > 0) {
+      var p = (s / m) * 100;
+      el.textContent = p.toFixed(1) + '%';
+      el.style.color = p < 50 ? 'var(--red)' : p < 65 ? 'var(--orange)' : 'var(--green)';
+    } else {
+      el.textContent = '—';
+      el.style.color = 'var(--accent)';
+    }
+  }
+
+  // ── Save score ───────────────────────────────────────────────────────────
+  function saveScore() {
+    var sel  = document.getElementById('sel-course');
+    var code = sel.value;
+    var name = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].dataset.name : '';
+    var type = document.getElementById('sel-type').value;
+    var s    = parseFloat(document.getElementById('inp-score').value);
+    var m    = parseFloat(document.getElementById('inp-max').value);
+    var notes = document.getElementById('inp-notes').value;
+
+    if (!code) { showToast('⚠️ Please select a course.'); return; }
+    if (isNaN(s) || isNaN(m) || m <= 0) { showToast('⚠️ Enter valid score and max.'); return; }
+    if (s > m) { showToast('⚠️ Score cannot exceed max.'); return; }
+
+    var btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    fetch('/api/gaps/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseCode: code, courseName: name, assessmentType: type,
+                             score: s, maxScore: m, notes: notes })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        showToast('✅ Score saved!');
+        document.getElementById('inp-score').value = '';
+        document.getElementById('inp-notes').value = '';
+        document.getElementById('pct-preview').textContent = '—';
+        loadScores();
+      }
+    })
+    .catch(function() { showToast('❌ Failed to save.'); })
+    .finally(function() { btn.disabled = false; btn.textContent = 'Save Score'; });
+  }
+
+  // ── Delete score ─────────────────────────────────────────────────────────
+  function deleteScore(id) {
+    fetch('/api/gaps/scores/' + id, { method: 'DELETE' })
+      .then(function(r) { return r.json(); })
+      .then(function() { showToast('🗑️ Removed.'); loadScores(); });
+  }
+
+  // ── Stats ────────────────────────────────────────────────────────────────
+  function updateStats() {
+    var total    = allScores.length;
+    var critical = allScores.filter(function(s) { return pct(s) < 50; }).length;
+    var warning  = allScores.filter(function(s) { return pct(s) >= 50 && pct(s) < 65; }).length;
+    var good     = allScores.filter(function(s) { return pct(s) >= 65; }).length;
+    document.getElementById('stat-total').textContent    = total;
+    document.getElementById('stat-critical').textContent = critical;
+    document.getElementById('stat-warning').textContent  = warning;
+    document.getElementById('stat-good').textContent     = good;
+  }
+
+  // ── History table ────────────────────────────────────────────────────────
+  function renderHistory() {
+    var container = document.getElementById('history-container');
+    if (allScores.length === 0) {
+      container.innerHTML = '<div class="empty-msg">No scores yet. Add your first assessment above!</div>';
+      return;
+    }
+    var rows = allScores.map(function(s) {
+      var p  = pct(s);
+      var sc = statusClass(p);
+      var date = s.recordedAt ? s.recordedAt.substring(0, 10) : '—';
+      return '<tr>' +
+        '<td><strong>' + s.courseName + '</strong><br><span style="color:var(--muted);font-size:0.78rem;">' + s.courseCode + '</span></td>' +
+        '<td>' + s.assessmentType + '</td>' +
+        '<td>' + s.score + ' / ' + s.maxScore + '</td>' +
+        '<td><span class="pct-pill ' + sc + '">' + p.toFixed(1) + '%</span></td>' +
+        '<td style="color:var(--muted);font-size:0.82rem;">' + date + '</td>' +
+        '<td>' + (s.notes ? '<span title="' + s.notes + '" style="color:var(--muted);">📝</span>' : '') + '</td>' +
+        '<td><button class="delete-btn" onclick="deleteScore(' + s.id + ')" title="Remove">🗑</button></td>' +
+      '</tr>';
+    }).join('');
+    container.innerHTML =
+      '<table class="scores-table">' +
+        '<thead><tr><th>Course</th><th>Type</th><th>Score</th><th>%</th><th>Date</th><th>Note</th><th></th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>';
+  }
+
+  // ── Gap analysis ─────────────────────────────────────────────────────────
+  function renderGapAnalysis() {
+    var grid = document.getElementById('gap-grid');
+    if (allScores.length === 0) {
+      grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1;">Log some scores first to see your gap analysis.</div>';
+      return;
+    }
+
+    // Group by courseCode
+    var byCourse = {};
+    allScores.forEach(function(s) {
+      if (!byCourse[s.courseCode]) byCourse[s.courseCode] = { name: s.courseName, code: s.courseCode, scores: [] };
+      byCourse[s.courseCode].scores.push(s);
+    });
+
+    var html = '';
+    Object.values(byCourse).forEach(function(c) {
+      var avgPct = c.scores.reduce(function(sum, s) { return sum + pct(s); }, 0) / c.scores.length;
+      var sc = statusClass(avgPct);
+
+      var assessmentRows = c.scores.map(function(s) {
+        var p = pct(s);
+        var fc = p < 50 ? 'fill-critical' : p < 65 ? 'fill-warning' : 'fill-good';
+        return '<div class="assessment-row">' +
+          '<div class="assessment-label">' +
+            '<span>' + s.assessmentType + '</span>' +
+            '<span style="color:' + (p < 50 ? 'var(--red)' : p < 65 ? 'var(--orange)' : 'var(--green)') + '">' +
+              s.score + '/' + s.maxScore + ' (' + p.toFixed(1) + '%)' +
+            '</span>' +
+          '</div>' +
+          '<div class="progress-bar"><div class="progress-fill ' + fc + '" style="width:' + Math.min(p, 100) + '%"></div></div>' +
+        '</div>';
+      }).join('');
+
+      html += '<div class="gap-card ' + sc + '">' +
+        '<div class="gap-card-header">' +
+          '<div><div class="gap-course-name">' + c.name + '</div><div class="gap-course-code">' + c.code + '</div></div>' +
+          '<span class="gap-status ' + sc + '">' + statusLabel(avgPct) + '</span>' +
+        '</div>' +
+        assessmentRows +
+        '<div style="margin-top:12px;font-size:0.8rem;font-weight:800;color:var(--muted);">Course Avg: ' +
+          '<span style="color:' + (avgPct < 50 ? 'var(--red)' : avgPct < 65 ? 'var(--orange)' : 'var(--green)') + '">' +
+          avgPct.toFixed(1) + '%</span></div>' +
+      '</div>';
+    });
+
+    grid.innerHTML = html;
+  }
+
+  // ── AI Plan ──────────────────────────────────────────────────────────────
+  function generatePlan() {
+    if (allScores.length === 0) { showToast('⚠️ Log at least one score first.'); return; }
+    var btn = document.getElementById('btn-gen-plan');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating…';
+    document.getElementById('plan-loading').classList.remove('hidden');
+    document.getElementById('plan-output').classList.remove('visible');
+
+    fetch('/api/gaps/plan', { method: 'POST' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        renderPlan(data.plan || 'No plan returned.');
+      })
+      .catch(function() { renderPlan('Error generating plan. Please try again.'); })
+      .finally(function() {
+        btn.disabled = false;
+        btn.textContent = '✨ Regenerate Plan';
+        document.getElementById('plan-loading').classList.add('hidden');
+      });
+  }
+
+  function renderPlan(text) {
+    var sectionHeaders = ['📌 PRIORITY AREAS', '📚 STUDY STRATEGIES', '📅 4-WEEK IMPROVEMENT PLAN', '🎯 MEASURABLE GOALS', '💡 QUICK TIPS'];
+    var output = document.getElementById('plan-output');
+    var content = document.getElementById('plan-content');
+
+    // Split by section headers and render
+    var html = '';
+    var parts = text;
+    sectionHeaders.forEach(function(header) {
+      parts = parts.split(header).join('|||SPLIT|||' + header);
+    });
+    var sections = parts.split('|||SPLIT|||').filter(function(s) { return s.trim(); });
+
+    sections.forEach(function(section) {
+      var matched = sectionHeaders.find(function(h) { return section.startsWith(h); });
+      if (matched) {
+        var body = section.substring(matched.length).trim();
+        html += '<div class="plan-section">' +
+          '<div class="plan-section-title">' + matched + '</div>' +
+          '<div class="plan-content">' + escapeHtml(body) + '</div>' +
+        '</div>';
+      } else if (section.trim()) {
+        html += '<div class="plan-section"><div class="plan-content">' + escapeHtml(section.trim()) + '</div></div>';
+      }
+    });
+
+    content.innerHTML = html;
+    output.classList.add('visible');
+    output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Tab switching ────────────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(function(b, i) {
+      b.classList.toggle('active', ['log','gaps','plan','profile'][i] === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'profile') loadProfileAnalysis();
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  PROFILE ANALYSIS TAB
+  // ══════════════════════════════════════════════════════════════════════════
+  var _paData = null;
+
+  var PA_LABELS  = ['LinkedIn', 'Network', 'Content', 'Projects', 'Seminars & WS', 'Bootcamps', 'Research', 'GitHub', 'Technical'];
+  var PA_KEYS    = ['linkedinScore','networkScore','contentScore','projectsScore','seminarsScore','bootcampsScore','researchScore','githubScore','technicalScore'];
+  var PA_COLORS  = ['#0a66c2','#7c3aed','#ea580c','#d97706','#db2777','#0891b2','#16a34a','#1f2b44','#dc2626'];
+  var NS         = 'http://www.w3.org/2000/svg';
+
+  function paAngleFor(i) { return (Math.PI * 2 * i / 9) - Math.PI / 2; }
+  function paPtAt(r, cx, cy, i) {
+    var a = paAngleFor(i);
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  }
+  function paMkEl(tag, attrs) {
+    var el = document.createElementNS(NS, tag);
+    Object.keys(attrs).forEach(function(k) { el.setAttribute(k, attrs[k]); });
+    return el;
+  }
+  function paColor(s) { return s >= 70 ? '#22c55e' : s >= 40 ? '#f59e0b' : '#ef4444'; }
+  function paCls(s)   { return s >= 70 ? 'strength' : s >= 40 ? 'avg' : 'gap'; }
+  function paTa(x, cx){ return x < cx - 15 ? 'end' : x > cx + 15 ? 'start' : 'middle'; }
+
+  function drawPaRadar(scores) {
+    var svg = document.getElementById('paRadarSvg');
+    svg.innerHTML = '';
+    var N = PA_LABELS.length;
+    var CX = 155, CY = 150, R = 90;
+    for (var ring = 1; ring <= 5; ring++) {
+      var r = R * ring / 5;
+      var pts = Array.from({length:N},function(_,i){ return paPtAt(r,CX,CY,i).map(function(v){return v.toFixed(1);}).join(','); }).join(' ');
+      svg.appendChild(paMkEl('polygon',{points:pts, fill: ring===5?'rgba(63,97,255,0.04)':'none', stroke:'rgba(63,97,255,0.13)', 'stroke-width':'1'}));
+      var rl = paMkEl('text',{x:CX+3, y:(CY-r+4).toFixed(1),'font-size':'7',fill:'rgba(109,122,152,0.7)','text-anchor':'middle'});
+      rl.textContent = (ring*20)+'%'; svg.appendChild(rl);
+    }
+    for (var i=0;i<N;i++){
+      var ep = paPtAt(R,CX,CY,i);
+      svg.appendChild(paMkEl('line',{x1:CX,y1:CY,x2:ep[0].toFixed(1),y2:ep[1].toFixed(1),stroke:'rgba(63,97,255,0.15)','stroke-width':'1'}));
+    }
+    var dataPts = scores.map(function(s,i){ return paPtAt(R*s/100,CX,CY,i).map(function(v){return v.toFixed(1);}).join(','); }).join(' ');
+    svg.appendChild(paMkEl('polygon',{points:dataPts,fill:'rgba(63,97,255,0.18)',stroke:'#3f61ff','stroke-width':'2','stroke-linejoin':'round'}));
+    scores.forEach(function(s,i){
+      var pt = paPtAt(R*s/100,CX,CY,i);
+      svg.appendChild(paMkEl('circle',{cx:pt[0].toFixed(1),cy:pt[1].toFixed(1),r:'5',fill:paColor(s),stroke:'#fff','stroke-width':'2'}));
+    });
+    PA_LABELS.forEach(function(lbl,i){
+      var lp = paPtAt(R+26,CX,CY,i);
+      var t  = paMkEl('text',{x:lp[0].toFixed(1),y:lp[1].toFixed(1),'text-anchor':paTa(lp[0],CX),'dominant-baseline':'middle','font-size':'8','font-weight':'700',fill:'#1f2b44'});
+      t.textContent = lbl; svg.appendChild(t);
+    });
+  }
+
+  function renderPaScoreBars(data) {
+    var c = document.getElementById('pa-score-bars');
+    c.innerHTML = '';
+    var colorMap = {strength:'#16a34a',avg:'#ea580c',gap:'#dc2626'};
+    var bgMap    = {strength:'linear-gradient(90deg,#22c55e,#16a34a)',avg:'linear-gradient(90deg,#f59e0b,#ea580c)',gap:'linear-gradient(90deg,#f87171,#dc2626)'};
+    PA_LABELS.forEach(function(lbl,i){
+      var s   = data[PA_KEYS[i]] || 0;
+      var cls = paCls(s);
+      var row = document.createElement('div');
+      row.className = 'pa-score-row';
+      row.innerHTML = '<span class="pa-lbl">'+lbl+'</span>'+
+        '<div class="pa-track"><div class="pa-fill" style="width:'+s+'%;background:'+bgMap[cls]+'"></div></div>'+
+        '<span class="pa-val" style="color:'+colorMap[cls]+'">'+s+'%</span>';
+      c.appendChild(row);
+    });
+  }
+
+  function renderPaSummaryChips(data) {
+    var scores = PA_KEYS.map(function(k){ return data[k]||0; });
+    var sc=0,av=0,gc=0;
+    scores.forEach(function(s){ if(s>=70)sc++; else if(s>=40)av++; else gc++; });
+    document.getElementById('pa-summary').innerHTML =
+      '<span class="pa-chip pa-chip-s">✅ '+sc+' Strong</span>'+
+      '<span class="pa-chip pa-chip-a">📊 '+av+' Average</span>'+
+      '<span class="pa-chip pa-chip-g">⚠️ '+gc+' Gap</span>';
+  }
+
+  function safeParseArr(json) {
+    try { return JSON.parse(json || '[]'); } catch(e){ return []; }
+  }
+
+  function renderList(id, items) {
+    var ul = document.getElementById(id);
+    ul.innerHTML = '';
+    (items||[]).forEach(function(txt){
+      var li = document.createElement('li');
+      li.textContent = txt;
+      ul.appendChild(li);
+    });
+  }
+
+  function renderPaResults(data) {
+    _paData = data;
+
+    // URL badges
+    document.getElementById('pa-li-badge').textContent  = '🔗 LinkedIn: ' + (data.linkedinUrl || '—');
+    var ghBadge = document.getElementById('pa-gh-badge');
+    if (data.githubUrl) { ghBadge.textContent = '⚙️ GitHub: '+data.githubUrl; ghBadge.style.display='inline-flex'; }
+    else                { ghBadge.style.display = 'none'; }
+
+    // Last refreshed
+    var ts = data.lastRefreshedAt;
+    document.getElementById('pa-last-refreshed').textContent = ts ? 'Last analysed: '+ts.replace('T',' ').substring(0,16) : '';
+
+    // Radar
+    var scores = PA_KEYS.map(function(k){ return data[k]||0; });
+    drawPaRadar(scores);
+    renderPaScoreBars(data);
+    renderPaSummaryChips(data);
+
+    // GitHub stats
+    var ghCard = document.getElementById('pa-gh-stats-card');
+    if (data.githubUrl && data.githubRepos > 0) {
+      ghCard.style.display = 'block';
+      document.getElementById('pa-gh-stats').innerHTML =
+        '<div class="pa-gh-stat"><div class="val">'+data.githubRepos+'</div><div class="lbl">Repos</div></div>'+
+        '<div class="pa-gh-stat"><div class="val">'+data.githubStars+'</div><div class="lbl">Stars</div></div>'+
+        '<div class="pa-gh-stat"><div class="val">'+data.githubFollowers+'</div><div class="lbl">Followers</div></div>';
+      document.getElementById('pa-gh-languages').textContent = data.githubLanguages ? '🛠 Languages: '+data.githubLanguages : '';
+    } else { ghCard.style.display='none'; }
+
+    // Strengths / Gaps / Recommendations
+    renderList('pa-strengths', safeParseArr(data.strengthsJson));
+    renderList('pa-gaps',      safeParseArr(data.gapsJson));
+    renderList('pa-recs',      safeParseArr(data.recommendationsJson));
+
+    // Summaries
+    document.getElementById('pa-li-summary').textContent = data.linkedinSummary || '';
+    var ghSumBox = document.getElementById('pa-gh-summary');
+    if (data.githubSummary) { ghSumBox.textContent = data.githubSummary; ghSumBox.style.display='block'; }
+    else                    { ghSumBox.style.display='none'; }
+
+    // Activity description card
+    var actCard = document.getElementById('pa-activity-card');
+    var actText = document.getElementById('pa-activity-text');
+    if (data.activityDescription) {
+      actText.textContent = data.activityDescription;
+      actCard.style.display = 'block';
+    } else {
+      actCard.style.display = 'none';
+    }
+
+    // Show results panel
+    document.getElementById('pa-gate').style.display      = 'none';
+    document.getElementById('pa-analyzing').style.display = 'none';
+    document.getElementById('pa-results').style.display   = 'block';
+  }
+
+  async function loadProfileAnalysis() {
+    try {
+      var resp = await fetch('/api/profile');
+      if (!resp.ok) return;
+      var data = await resp.json();
+
+      if (!data.linkedinUrl || data.status === 'NOT_SETUP') {
+        document.getElementById('pa-gate').style.display      = 'block';
+        document.getElementById('pa-analyzing').style.display = 'none';
+        document.getElementById('pa-results').style.display   = 'none';
+        return;
+      }
+      if (data.status === 'ANALYZING') {
+        document.getElementById('pa-gate').style.display      = 'none';
+        document.getElementById('pa-analyzing').style.display = 'block';
+        document.getElementById('pa-results').style.display   = 'none';
+        setTimeout(loadProfileAnalysis, 3000);
+        return;
+      }
+      renderPaResults(data);
+    } catch(e) { console.error('Profile load failed', e); }
+  }
+
+  async function connectProfiles() {
+    var li  = document.getElementById('pa-linkedin-inp').value.trim();
+    var gh  = document.getElementById('pa-github-inp').value.trim();
+    var act = document.getElementById('pa-activity-inp').value.trim();
+    if (!li) { showToast('⚠️ LinkedIn URL is required.'); return; }
+
+    document.getElementById('pa-gate').style.display      = 'none';
+    document.getElementById('pa-analyzing').style.display = 'block';
+    document.getElementById('pa-results').style.display   = 'none';
+
+    try {
+      var resp = await fetch('/api/profile/analyze', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({linkedinUrl: li, githubUrl: gh || null, activityDescription: act || null})
+      });
+      var data = await resp.json();
+      if (data.status === 'DONE') renderPaResults(data);
+      else showToast('❌ Analysis failed. Try again.');
+    } catch(e) { showToast('❌ Network error.'); document.getElementById('pa-gate').style.display='block'; }
+  }
+
+  async function refreshAnalysis() {
+    var btn = document.getElementById('pa-refresh-btn');
+    btn.disabled=true; btn.textContent='Refreshing…';
+    document.getElementById('pa-results').style.display   = 'none';
+    document.getElementById('pa-analyzing').style.display = 'block';
+    try {
+      var resp = await fetch('/api/profile/refresh', {method:'POST'});
+      var data = await resp.json();
+      if (data.status === 'DONE') renderPaResults(data);
+      else showToast('❌ Refresh failed.');
+    } catch(e){ showToast('❌ Network error.'); }
+    finally { btn.disabled=false; btn.textContent='🔄 Refresh Analysis'; document.getElementById('pa-analyzing').style.display='none'; }
+  }
+
+  function showUpdateForm() {
+    var d = _paData || {};
+    document.getElementById('pa-update-li').value  = d.linkedinUrl          || '';
+    document.getElementById('pa-update-gh').value  = d.githubUrl            || '';
+    document.getElementById('pa-update-act').value = d.activityDescription  || '';
+    document.getElementById('pa-update-form').style.display = 'block';
+    document.getElementById('pa-update-form').scrollIntoView({behavior:'smooth'});
+  }
+  function hideUpdateForm() { document.getElementById('pa-update-form').style.display='none'; }
+
+  async function submitUpdateUrls() {
+    var li  = document.getElementById('pa-update-li').value.trim();
+    var gh  = document.getElementById('pa-update-gh').value.trim();
+    var act = document.getElementById('pa-update-act').value.trim();
+    if (!li) { showToast('⚠️ LinkedIn URL is required.'); return; }
+    hideUpdateForm();
+    document.getElementById('pa-results').style.display   = 'none';
+    document.getElementById('pa-analyzing').style.display = 'block';
+    try {
+      var resp = await fetch('/api/profile/urls', {
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({linkedinUrl: li, githubUrl: gh || null, activityDescription: act || null})
+      });
+      var data = await resp.json();
+      if (data.status === 'DONE') { renderPaResults(data); showToast('✅ Profile updated!'); }
+      else showToast('❌ Update failed.');
+    } catch(e){ showToast('❌ Network error.'); }
+    finally { document.getElementById('pa-analyzing').style.display='none'; }
+  }
+</script>
+</body>
+</html>

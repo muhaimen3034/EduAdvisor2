@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="chatbot">
+
+  <div id="edubot-root">
+
+    <!-- Chat panel -->
+    <div id="edubot-panel">
+      <div class="eb-header">
+        <div class="eb-header-left">
+          <div class="eb-avatar">✨</div>
+          <div>
+            <div class="eb-name">Nova</div>
+            <div class="eb-status">Say "Hey Nova" to activate</div>
+          </div>
+        </div>
+        <button class="eb-close" onclick="edubotToggle()" title="Close">✕</button>
+      </div>
+      <div id="edubot-messages" class="eb-messages">
+        <div class="eb-bubble eb-bubble-bot">
+          Hi! I'm Nova ✨<br/>
+          Say <strong>"Hey Nova"</strong> anywhere on this page to activate me.<br/>
+          You can ask questions or say <em>"Hey Nova open teachers"</em> to navigate!
+        </div>
+      </div>
+      <div class="eb-input-row">
+        <input id="edubot-input" type="text" placeholder="Ask Nova…"
+               onkeydown="if(event.key==='Enter')edubotSend()" maxlength="500" />
+        <button id="edubot-send" onclick="edubotSend()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Listening toast -->
+    <div id="voice-toast"></div>
+
+    <!-- Chat FAB with tiny always-listening dot -->
+    <div style="position:relative;">
+      <div id="nova-dot" title="Nova is listening for 'Hey Nova'"></div>
+      <button id="edubot-fab" onclick="edubotToggle()" title="Chat with Nova">
+        <span id="edubot-fab-open">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
+               fill="white" stroke="white" stroke-width="0">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+          </svg>
+        </span>
+        <span id="edubot-fab-close" style="display:none;font-size:1.4rem;line-height:1;">✕</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Mobile hamburger + overlay -->
+  <button id="mob-ham" aria-label="Open navigation">&#9776;</button>
+  <div id="mob-overlay"></div>
+
+  <!-- Dark / Light mode toggle -->
+  <button id="theme-fab" onclick="toggleTheme()" title="Toggle dark / light mode">
+    <span id="theme-icon">🌙</span>
+  </button>
+
+  <style>
+    /* ── Theme toggle button ── */
+    #theme-fab {
+      position: fixed; top: 24px; right: 24px;
+      width: 50px; height: 50px; border-radius: 50%;
+      background: #ffffff; border: 2px solid rgba(63,97,255,0.15);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.10);
+      cursor: pointer; font-size: 1.3rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .2s, box-shadow .2s; z-index: 9998;
+    }
+    #theme-fab:hover { transform: scale(1.12); box-shadow: 0 8px 28px rgba(63,97,255,0.22); }
+    html[data-theme="dark"] #theme-fab {
+      background: #1e2235; border-color: rgba(107,138,255,0.28);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.40);
+    }
+
+    /* ── Dark mode CSS variables ── */
+    html[data-theme="dark"] {
+      --bg:           #0f1117;
+      --panel:        #1a1d2a;
+      --accent:       #6b8aff;
+      --accent-light: rgba(107,138,255,0.10);
+      --text:         #e2e8f5;
+      --muted:        #8892b0;
+      --border:       rgba(107,138,255,0.18);
+      --warn:         #f59e0b;
+      --warn-light:   rgba(245,158,11,0.08);
+    }
+    html[data-theme="dark"] body {
+      background: radial-gradient(circle at top, #1a1f3c 0%, #0f1117 55%, #080a10 100%) !important;
+    }
+
+    /* Sidebar & navigation */
+    html[data-theme="dark"] .sidebar         { background: var(--panel) !important; }
+    html[data-theme="dark"] .nav-link        { background: #20243a !important; color: var(--text) !important; }
+    html[data-theme="dark"] .nav-link .nav-icon { color: var(--text) !important; }
+    html[data-theme="dark"] .nav-link:hover,
+    html[data-theme="dark"] .nav-link.active { background: rgba(107,138,255,0.16) !important; color: var(--accent) !important; }
+    html[data-theme="dark"] .nav-link:hover .nav-icon,
+    html[data-theme="dark"] .nav-link.active .nav-icon { color: var(--accent) !important; }
+    html[data-theme="dark"] .profile-card    { background: #161a28 !important; }
+    html[data-theme="dark"] .profile-card h2 { color: var(--text) !important; }
+    html[data-theme="dark"] .profile-card p  { color: var(--muted) !important; }
+    html[data-theme="dark"] .brand-title     { color: var(--text) !important; }
+
+    /* Generic cards & panels */
+    html[data-theme="dark"] .ask-card,    html[data-theme="dark"] .form-card,
+    html[data-theme="dark"] .thread,      html[data-theme="dark"] .report-card,
+    html[data-theme="dark"] .hero,        html[data-theme="dark"] .stat-card,
+    html[data-theme="dark"] .tt-card,     html[data-theme="dark"] .events-card,
+    html[data-theme="dark"] .card,        html[data-theme="dark"] .teacher-card,
+    html[data-theme="dark"] .section-card,html[data-theme="dark"] .fee-card,
+    html[data-theme="dark"] .pending-panel,html[data-theme="dark"] .approved-panel,
+    html[data-theme="dark"] .dl-card,     html[data-theme="dark"] .advice-card { background: var(--panel) !important; }
+
+    /* Form inputs */
+    html[data-theme="dark"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    html[data-theme="dark"] select,
+    html[data-theme="dark"] textarea {
+      background: #1a1e30 !important; color: var(--text) !important;
+      border-color: rgba(107,138,255,0.22) !important;
+    }
+    html[data-theme="dark"] input[readonly] { background: #131626 !important; }
+    html[data-theme="dark"] input:focus,
+    html[data-theme="dark"] select:focus,
+    html[data-theme="dark"] textarea:focus  { background: #1e2438 !important; }
+
+    /* Discussion bubbles */
+    html[data-theme="dark"] .msg-student   { background: #141c38 !important; border-color: rgba(107,138,255,0.14) !important; }
+    html[data-theme="dark"] .msg-teacher   { background: #0f2018 !important; border-color: rgba(34,197,94,0.12) !important; }
+    html[data-theme="dark"] .thread-header { background: rgba(107,138,255,0.08) !important; }
+    html[data-theme="dark"] .pending-tag   { background: rgba(245,158,11,0.08) !important; }
+
+    /* Lost & Found */
+    html[data-theme="dark"] .desc-block    { background: #1c1810 !important; border-color: rgba(245,158,11,0.12) !important; }
+    html[data-theme="dark"] .coord-note    { background: #0d1e18 !important; }
+    html[data-theme="dark"] .report-header { background: rgba(245,158,11,0.06) !important; }
+
+    /* Notification banners */
+    html[data-theme="dark"] .notif-answer   { background: rgba(107,138,255,0.08) !important; border-color: rgba(107,138,255,0.20) !important; }
+    html[data-theme="dark"] .notif-found    { background: rgba(22,163,74,0.08)   !important; border-color: rgba(22,163,74,0.22)   !important; }
+    html[data-theme="dark"] .banner-success { background: rgba(34,197,94,0.08)   !important; }
+    html[data-theme="dark"] .reminder-bar   { background: rgba(107,138,255,0.06) !important; border-color: rgba(107,138,255,0.15) !important; }
+
+    /* AI answer panel */
+    html[data-theme="dark"] .ai-answer-panel {
+      background: linear-gradient(135deg, rgba(109,40,217,0.07) 0%, rgba(107,138,255,0.04) 100%) !important;
+      border-color: rgba(109,40,217,0.18) !important;
+    }
+
+    /* Modals */
+    html[data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.72) !important; }
+    html[data-theme="dark"] .modal,
+    html[data-theme="dark"] .teacher-modal { background: #1a1d2a !important; }
+
+    /* Empty states */
+    html[data-theme="dark"] .empty-state { background: var(--panel) !important; border-color: rgba(107,138,255,0.15) !important; }
+
+    /* Chatbot panel dark styles */
+    html[data-theme="dark"] #edubot-panel  { background: #1a1d2a !important; box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(107,138,255,0.14) !important; }
+    html[data-theme="dark"] .eb-messages   { background: #12152a !important; }
+    html[data-theme="dark"] .eb-bubble-bot { background: #1e2338 !important; color: var(--text) !important; border-color: rgba(107,138,255,0.14) !important; }
+    html[data-theme="dark"] .eb-input-row  { background: #1a1d2a !important; border-top-color: rgba(107,138,255,0.12) !important; }
+    html[data-theme="dark"] #edubot-input  { background: #1e2338 !important; color: var(--text) !important; border-color: rgba(107,138,255,0.2) !important; }
+    html[data-theme="dark"] .eb-typing     { background: #1e2338 !important; border-color: rgba(107,138,255,0.12) !important; }
+    html[data-theme="dark"] #nova-dot      { border-color: #1a1d2a !important; }
+
+    #edubot-root {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    }
+
+    /* Always-listening dot */
+    #nova-dot {
+      position: absolute; top: -2px; right: -2px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #10b981; border: 2px solid #fff; z-index: 1;
+      animation: nova-idle 2.5s ease-in-out infinite;
+    }
+    #nova-dot.command-mode {
+      background: #f59e0b;
+      animation: nova-pulse 0.7s ease-in-out infinite;
+    }
+    #nova-dot.hidden { display: none; }
+    @keyframes nova-idle {
+      0%,100% { opacity: .7; transform: scale(1);   }
+      50%      { opacity: 1;  transform: scale(1.2); }
+    }
+    @keyframes nova-pulse {
+      0%,100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(245,158,11,.6); }
+      50%      { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(245,158,11,0);  }
+    }
+
+    /* Chat FAB */
+    #edubot-fab {
+      width: 58px; height: 58px; border-radius: 50%;
+      background: linear-gradient(135deg, #3f61ff, #6b8aff);
+      border: none; cursor: pointer;
+      box-shadow: 0 6px 24px rgba(63,97,255,0.45);
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .2s, box-shadow .2s; color: white;
+    }
+    #edubot-fab:hover { transform: scale(1.08); box-shadow: 0 10px 32px rgba(63,97,255,0.55); }
+
+    /* Voice toast */
+    #voice-toast {
+      background: rgba(15,20,40,0.88); color: #fff;
+      padding: 9px 18px; border-radius: 20px;
+      font-size: .83rem; font-weight: 600;
+      display: none; white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      animation: eb-slide-in .2s ease;
+    }
+    #voice-toast.show { display: block; }
+
+    /* Chat panel */
+    #edubot-panel {
+      display: none; flex-direction: column;
+      width: 340px; height: 480px; background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 20px 60px rgba(31,43,68,0.18), 0 0 0 1px rgba(63,97,255,0.1);
+      overflow: hidden; animation: eb-slide-in .22s ease;
+    }
+    #edubot-panel.open { display: flex; }
+
+    @keyframes eb-slide-in {
+      from { opacity: 0; transform: translateY(16px) scale(.97); }
+      to   { opacity: 1; transform: translateY(0)    scale(1);   }
+    }
+
+    .eb-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #3f61ff, #6b8aff); color: white;
+    }
+    .eb-header-left { display: flex; align-items: center; gap: 10px; }
+    .eb-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: rgba(255,255,255,0.2); font-size: 1.25rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .eb-name   { font-weight: 700; font-size: .95rem; }
+    .eb-status { font-size: .72rem; opacity: .85; }
+    .eb-close {
+      background: rgba(255,255,255,0.18); border: none; color: white;
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      font-size: .9rem; display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .eb-close:hover { background: rgba(255,255,255,0.3); }
+
+    .eb-messages {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px; background: #f4f7ff;
+    }
+    .eb-messages::-webkit-scrollbar { width: 4px; }
+    .eb-messages::-webkit-scrollbar-thumb { background: #c5d0f5; border-radius: 4px; }
+    .eb-bubble {
+      max-width: 82%; padding: 10px 14px; border-radius: 18px;
+      font-size: .875rem; line-height: 1.5; word-wrap: break-word;
+    }
+    .eb-bubble-bot ul, .eb-bubble-bot ol {
+      margin: 4px 0 4px 0; padding-left: 18px;
+    }
+    .eb-bubble-bot li { margin-bottom: 3px; }
+    .eb-bubble-bot strong { font-weight: 700; }
+    .eb-bubble-bot {
+      background: #fff; color: #1f2b44;
+      border: 1px solid rgba(63,97,255,0.12);
+      border-bottom-left-radius: 4px; align-self: flex-start;
+    }
+    .eb-bubble-user {
+      background: linear-gradient(135deg, #3f61ff, #6b8aff);
+      color: white; border-bottom-right-radius: 4px; align-self: flex-end;
+    }
+    .eb-typing {
+      display: flex; align-items: center; gap: 4px;
+      padding: 10px 14px; background: #fff;
+      border: 1px solid rgba(63,97,255,0.12);
+      border-radius: 18px; border-bottom-left-radius: 4px;
+      align-self: flex-start; width: fit-content;
+    }
+    .eb-dot { width: 7px; height: 7px; border-radius: 50%; background: #3f61ff; animation: eb-bounce .9s infinite; }
+    .eb-dot:nth-child(2) { animation-delay: .15s; }
+    .eb-dot:nth-child(3) { animation-delay: .30s; }
+    @keyframes eb-bounce {
+      0%,80%,100% { transform: translateY(0);   opacity: .4; }
+      40%          { transform: translateY(-5px); opacity: 1;  }
+    }
+
+    .eb-input-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 14px; border-top: 1px solid rgba(63,97,255,0.1); background: #fff;
+    }
+    #edubot-input {
+      flex: 1; border: 1.5px solid rgba(63,97,255,0.2);
+      border-radius: 20px; padding: 9px 14px;
+      font-size: .875rem; outline: none; color: #1f2b44;
+      font-family: inherit; transition: border-color .15s;
+    }
+    #edubot-input:focus { border-color: #3f61ff; }
+    #edubot-send {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, #3f61ff, #6b8aff);
+      border: none; cursor: pointer; color: white;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform .15s;
+    }
+    #edubot-send:hover { transform: scale(1.1); }
+    #edubot-send:disabled { opacity: .5; cursor: default; transform: none; }
+
+    @media (max-width: 420px) { #edubot-panel { width: calc(100vw - 32px); } }
+
+    /* ══════════════════════════════════════════════
+       GLOBAL RESPONSIVE — applied to all pages
+       via this shared fragment
+    ══════════════════════════════════════════════ */
+
+    /* ── Hamburger button (mobile only) ── */
+    #mob-ham {
+      display: none;
+      position: fixed; top: 14px; left: 14px; z-index: 9990;
+      width: 44px; height: 44px; border-radius: 12px;
+      background: #3f61ff; color: #fff; border: none;
+      font-size: 20px; cursor: pointer;
+      align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(63,97,255,0.38);
+      transition: background .18s;
+    }
+    html[data-theme="dark"] #mob-ham { background: #6b8aff; }
+    #mob-ham:hover { background: #2a4fe0; }
+
+    /* ── Overlay backdrop ── */
+    #mob-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(10,15,40,0.42); z-index: 9980;
+      backdrop-filter: blur(2px);
+    }
+    #mob-overlay.active { display: block; }
+
+    @media (max-width: 900px) {
+      /* Show hamburger */
+      #mob-ham { display: flex; }
+
+      /* Sidebar slides in from the left */
+      .sidebar {
+        position: fixed !important;
+        left: -310px !important;
+        top: 0 !important;
+        height: 100vh !important;
+        width: 280px !important;
+        max-width: 85vw !important;
+        z-index: 9985 !important;
+        border-radius: 0 24px 24px 0 !important;
+        overflow-y: auto !important;
+        transition: left 0.28s cubic-bezier(0.4,0,0.2,1) !important;
+        box-shadow: none !important;
+      }
+      .sidebar.mob-open {
+        left: 0 !important;
+        box-shadow: 6px 0 40px rgba(0,0,0,0.20) !important;
+      }
+
+      /* Collapse the layout grid to single column */
+      .layout {
+        grid-template-columns: 1fr !important;
+        padding: 16px !important;
+      }
+
+      /* Card & section padding */
+      .hero, .card, .ask-card, .form-card, .thread,
+      .report-card, .req-card { padding: 20px !important; }
+
+      /* Header padding */
+      header { padding: 0 !important; }
+      .header-inner { padding: 12px 16px !important; }
+
+      /* Push content so it doesn't sit behind the ham button */
+      .main, main { padding-top: 8px; }
+
+      /* Theme button: smaller on mobile */
+      #theme-fab { top: 14px !important; right: 14px !important; width: 44px !important; height: 44px !important; font-size: 1.1rem !important; }
+    }
+
+    @media (max-width: 640px) {
+      /* Typography */
+      .hero h1, .page-title h2 { font-size: 1.3rem !important; }
+
+      /* Stat grids → 2 col */
+      .stats-row, .stat-row, .stats-grid { grid-template-columns: 1fr 1fr !important; }
+
+      /* Cards grid → 1 col */
+      .cards, .card-grid, .guide-grid, .result-breakdown,
+      .req-grid, .requests-grid { grid-template-columns: 1fr !important; }
+
+      /* Form fields always full width */
+      .form-grid, .field-row { grid-template-columns: 1fr !important; }
+
+      /* Buttons stack */
+      .submit-row, .ai-btn-row { flex-direction: column !important; }
+      .btn-primary, .btn-secondary, .ai-action-btn { width: 100% !important; text-align: center !important; }
+
+      /* Notification banners */
+      .notif-banner { flex-direction: column !important; gap: 8px !important; padding: 14px !important; }
+
+      /* Chat panel full width */
+      #edubot-panel { width: calc(100vw - 24px) !important; }
+
+      /* Header nav wraps */
+      nav { flex-wrap: wrap !important; }
+      .nav-btn { font-size: 12px !important; padding: 8px 10px !important; }
+    }
+
+    @media (max-width: 420px) {
+      .layout { padding: 12px !important; gap: 16px !important; }
+      .stats-row, .stat-row, .stats-grid { grid-template-columns: 1fr !important; }
+    }
+  </style>
+
+  <script>
+    /* ── Theme management ───────────────────────────────────────── */
+    (function() {
+      var t = localStorage.getItem('eduadvisor-theme');
+      if (t) document.documentElement.setAttribute('data-theme', t);
+    })();
+
+    function toggleTheme() {
+      var curr = document.documentElement.getAttribute('data-theme') || 'light';
+      var next = curr === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('eduadvisor-theme', next);
+      var icon = document.getElementById('theme-icon');
+      if (icon) icon.textContent = next === 'dark' ? '☀️' : '🌙';
+    }
+
+    (function syncIcon() {
+      var icon = document.getElementById('theme-icon');
+      if (icon) {
+        icon.textContent = (localStorage.getItem('eduadvisor-theme') === 'dark') ? '☀️' : '🌙';
+      } else {
+        setTimeout(syncIcon, 50);
+      }
+    })();
+
+    /* ── Navigation map ─────────────────────────────────────────── */
+    var NAV_MAP = {
+      // Home
+      'home':              '/dashboard.html',
+      'dashboard':         '/dashboard.html',
+      'main':              '/dashboard.html',
+      // Advice
+      'advice':            '/advice.html',
+      'academic advice':   '/advice.html',
+      // Schedule
+      'schedule':          '/schedule.html',
+      'timetable':         '/schedule.html',
+      'time table':        '/schedule.html',
+      'calendar':          '/schedule.html',
+      // Resources
+      'resource':          '/resources.html',
+      'resources':         '/resources.html',
+      'study resources':   '/resources.html',
+      // Teachers
+      'teacher':           '/teachers.html',
+      'teachers':          '/teachers.html',
+      'faculty':           '/teachers.html',
+      'instructors':       '/teachers.html',
+      // Credit Transfer
+      'credit':            '/CreaditTransfer.html',
+      'credits':           '/CreaditTransfer.html',
+      'credit transfer':   '/CreaditTransfer.html',
+      'transfer':          '/CreaditTransfer.html',
+      // My Courses
+      'course':            '/my-courses.html',
+      'courses':           '/my-courses.html',
+      'my courses':        '/my-courses.html',
+      'my class':          '/my-courses.html',
+      'my classes':        '/my-courses.html',
+      // Grade Calculator
+      'grade calculator':  '/grade-calculator.html',
+      'grade calc':        '/grade-calculator.html',
+      'calculator':        '/grade-calculator.html',
+      'final marks':       '/grade-calculator.html',
+      'marks calculator':  '/grade-calculator.html',
+      // Learning Gaps
+      'learning gap':      '/learning-gap.html',
+      'learning gaps':     '/learning-gap.html',
+      'gap':               '/learning-gap.html',
+      'gaps':              '/learning-gap.html',
+      'performance gap':   '/learning-gap.html',
+      'weak areas':        '/learning-gap.html',
+      'struggling':        '/learning-gap.html',
+      // AI Study Coach
+      'study coach':       '/study-coach.html',
+      'ai coach':          '/study-coach.html',
+      'coach':             '/study-coach.html',
+      'practice':          '/study-coach.html',
+      'quiz':              '/study-coach.html',
+      'study session':     '/study-coach.html',
+      'practice quiz':     '/study-coach.html',
+      // Q-Bank
+      'question bank':     'https://diuqbank.com/#google_vignette',
+      'q bank':            'https://diuqbank.com/#google_vignette',
+      'qbank':             'https://diuqbank.com/#google_vignette',
+      'question':          'https://diuqbank.com/#google_vignette',
+      // Discussion
+      'discussion':        '/discussion.html',
+      'discussions':       '/discussion.html',
+      'forum':             '/discussion.html',
+      // My Papers
+      'paper':             '/my-papers.html',
+      'papers':            '/my-papers.html',
+      'my papers':         '/my-papers.html',
+      'exam paper':        '/my-papers.html',
+      'exam papers':       '/my-papers.html',
+      // Lost & Found
+      'lost':              '/lost-found.html',
+      'lost found':        '/lost-found.html',
+      'lost and found':    '/lost-found.html',
+      'found':             '/lost-found.html',
+      // Notifications / Settings
+      'notification':      '/settings.html',
+      'notifications':     '/settings.html',
+      'settings':          '/settings.html',
+      // Profile
+      'profile':           '/profile.html',
+      'my profile':        '/profile.html',
+      'account':           '/profile.html',
+      // Counselling
+      'counselling hours': '/counselling.html',
+      'counselling':       '/counselling.html',
+      'counseling':        '/counselling.html',
+      'counsel':           '/counselling.html',
+      // Logout
+      'logout':            '/logout',
+      'log out':           '/logout',
+      'sign out':          '/logout',
+      'exit':              '/logout',
+      'bye':               '/logout',
+    };
+
+    var WAKE_WORD    = 'nova';
+    var commandMode  = false;
+    var cmdTimeout   = null;
+    var recognition  = null;
+
+    /* ── Booking intent patterns ────────────────────────────────── */
+    var BOOKING_PATTERNS = [
+      'book an appointment', 'book appointment', 'book a meeting',
+      'schedule an appointment', 'schedule a meeting',
+      'appointment with', 'meeting with', 'book with'
+    ];
+    var pendingBooking   = null;
+    var pendingDeleteAll = false;
+
+    /* ── Process spoken command ─────────────────────────────────── */
+    function processVoice(text) {
+      text = text.trim();
+      var lower = text.toLowerCase();
+
+      // If delete-all confirmation is pending, handle voice yes/no
+      if (pendingDeleteAll) {
+        if (/\b(yes|confirm|ok|okay|sure|do it)\b/.test(lower)) { confirmDeleteAll(); return; }
+        if (/\b(no|cancel|nevermind|never mind|stop|abort)\b/.test(lower)) {
+          pendingDeleteAll = false;
+          edubotAppend('bot', 'No worries — your appointments are safe!');
+          return;
+        }
+      }
+
+      // If booking card is on screen, handle voice yes/no
+      if (pendingBooking) {
+        if (/\b(yes|confirm|ok|okay|book it|do it|sure)\b/.test(lower)) { confirmBooking(); return; }
+        if (/\b(no|cancel|nevermind|never mind|stop|abort)\b/.test(lower)) { cancelBooking(); return; }
+      }
+
+      // Detect delete-all intent
+      var DELETE_PATTERNS = [
+        'delete all appointments', 'cancel all appointments', 'remove all appointments',
+        'clear all appointments', 'delete my appointments', 'cancel my appointments',
+        'remove my appointments', 'delete all bookings', 'cancel all bookings'
+      ];
+      var isDeleteAll = DELETE_PATTERNS.some(function(p) { return lower.includes(p); });
+      if (isDeleteAll) { handleVoiceDeleteAll(); return; }
+
+      // Detect booking intent before nav matching
+      var isBooking = BOOKING_PATTERNS.some(function(p) { return lower.includes(p); });
+      if (isBooking) { handleVoiceBooking(text); return; }
+
+      // Strip navigation triggers
+      var cleaned = lower
+        .replace(/^(open|go to|navigate to|show me|show|take me to|switch to)\s+/i, '')
+        .trim();
+
+      // Longest-key-first matching
+      var keys = Object.keys(NAV_MAP).sort(function(a,b){ return b.length - a.length; });
+      for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        if (cleaned === key || cleaned.startsWith(key) || lower.includes(key)) {
+          showToast('✨ Opening ' + key + '…');
+          setTimeout(function(url){ window.location.href = url; }, 900, NAV_MAP[key]);
+          return;
+        }
+      }
+
+      // Not a nav command — send to Nova chat
+      if (!edubotOpen) edubotToggle();
+      document.getElementById('edubot-input').value = text;
+      edubotSend();
+    }
+
+    /* ── Voice booking flow ─────────────────────────────────────── */
+    function handleVoiceBooking(text) {
+      if (!edubotOpen) edubotToggle();
+      edubotAppend('user', text);
+      showToast('⏳ Checking booking details…');
+      var typingEl = edubotShowTyping();
+
+      fetch('/chat/parse-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        typingEl.remove();
+        if (data.intent === 'booking' && data.teacherName) {
+          showBookingCard(data.teacherName, data.slot || 'Time TBD', data.reason || '');
+        } else {
+          edubotAppend('bot', 'I couldn\'t identify the teacher or time. Try: "Hey Nova book an appointment with Dr. Ahmed at 3pm on Monday"');
+        }
+      })
+      .catch(function() {
+        typingEl.remove();
+        edubotAppend('bot', 'Sorry, something went wrong. Please try again.');
+      });
+    }
+
+    function showBookingCard(teacherName, slot, reason) {
+      pendingBooking = { teacherName: teacherName, slot: slot, reason: reason };
+      var msgs = document.getElementById('edubot-messages');
+      var old  = document.getElementById('booking-confirm-card');
+      if (old) old.remove();
+      var card = document.createElement('div');
+      card.id = 'booking-confirm-card';
+      card.className = 'eb-bubble eb-bubble-bot';
+      card.style.cssText = 'padding:0;background:none;box-shadow:none;';
+      card.innerHTML =
+        '<div style="background:linear-gradient(135deg,#3f61ff,#6366f1);color:#fff;border-radius:16px;padding:16px 18px;">' +
+          '<div style="font-size:.75rem;opacity:.8;margin-bottom:7px;letter-spacing:.03em;">📅 BOOKING REQUEST</div>' +
+          '<div style="font-size:1rem;font-weight:700;">' + teacherName + '</div>' +
+          '<div style="font-size:.88rem;opacity:.88;margin-top:3px;">' + slot + '</div>' +
+          (reason ? '<div style="font-size:.8rem;margin-top:5px;opacity:.75;">Reason: ' + reason + '</div>' : '') +
+          '<div style="font-size:.74rem;opacity:.65;margin-top:9px;">Say "yes" or tap Confirm to book</div>' +
+          '<div style="display:flex;gap:8px;margin-top:13px;">' +
+            '<button onclick="confirmBooking()" style="flex:1;padding:9px;background:#fff;color:#3f61ff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:.85rem;">✓ Confirm</button>' +
+            '<button onclick="cancelBooking()" style="flex:1;padding:9px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;font-weight:600;cursor:pointer;font-size:.85rem;">✗ Cancel</button>' +
+          '</div>' +
+        '</div>';
+      msgs.appendChild(card);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function confirmBooking() {
+      if (!pendingBooking) return;
+      var card = document.getElementById('booking-confirm-card');
+      if (card) card.remove();
+      var b = pendingBooking;
+      pendingBooking = null;
+
+      fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherName: b.teacherName, slot: b.slot, reason: b.reason })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          edubotAppend('bot', '✅ Done! Appointment booked with ' + b.teacherName + ' for ' + b.slot + '.');
+          showToast('📅 Booked with ' + b.teacherName + '!');
+          // Refresh counselling page live if already on it
+          if (typeof loadBookingsFromDB === 'function') {
+            loadBookingsFromDB().then(function() {
+              if (typeof renderGrid === 'function' && typeof teachers !== 'undefined') {
+                renderGrid(teachers);
+              }
+            });
+          }
+        } else {
+          edubotAppend('bot', 'Booking failed. Please try again.');
+        }
+      })
+      .catch(function() { edubotAppend('bot', 'Could not save booking. Please try again.'); });
+    }
+
+    function cancelBooking() {
+      var card = document.getElementById('booking-confirm-card');
+      if (card) card.remove();
+      pendingBooking = null;
+      edubotAppend('bot', 'No problem! Just say "Hey Nova book an appointment with [teacher name] at [time]" whenever you\'re ready.');
+    }
+
+    /* ── Delete all appointments ────────────────────────────────── */
+    function handleVoiceDeleteAll() {
+      if (!edubotOpen) edubotToggle();
+      pendingDeleteAll = true;
+      edubotAppend('bot',
+        '⚠️ Are you sure you want to delete ALL your appointments? This cannot be undone.\nSay "yes" to confirm or "no" to cancel.'
+      );
+    }
+
+    function confirmDeleteAll() {
+      pendingDeleteAll = false;
+      fetch('/api/bookings/all', { method: 'DELETE' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.success) {
+            edubotAppend('bot', '🗑️ All your appointments have been deleted.');
+            showToast('🗑️ All appointments deleted!');
+            // If on counselling page, refresh the bookings section live
+            var container = document.getElementById('bookings-container');
+            if (container) {
+              container.innerHTML =
+                '<div class="bookings-empty">' +
+                  '<div class="empty-icon">📭</div>' +
+                  '<p>You have no upcoming appointments. Browse available teachers below and book one!</p>' +
+                '</div>';
+            }
+            // Clear booked slots so teacher grid resets too
+            if (typeof bookedSlots !== 'undefined') {
+              bookedSlots.clear();
+              if (typeof booked !== 'undefined') booked.length = 0;
+              if (typeof renderGrid === 'function') renderGrid(typeof teachers !== 'undefined' ? teachers : []);
+            }
+          } else {
+            edubotAppend('bot', 'Could not delete appointments. Please try from the Counselling Hours page.');
+          }
+        })
+        .catch(function() { edubotAppend('bot', 'Something went wrong. Please try again.'); });
+    }
+
+    /* ── Always-on wake word detection ─────────────────────────── */
+    function startNova() {
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return; // silently skip on unsupported browsers
+
+      recognition = new SR();
+      recognition.continuous    = true;
+      recognition.interimResults = false;
+      recognition.lang          = 'en-US';
+
+      recognition.onresult = function(event) {
+        for (var i = event.resultIndex; i < event.results.length; i++) {
+          if (!event.results[i].isFinal) continue;
+          var text  = event.results[i][0].transcript.trim();
+          var lower = text.toLowerCase();
+
+          // If waiting for yes/no confirmation, handle without needing wake word
+          if ((pendingDeleteAll || pendingBooking) &&
+              /\b(yes|confirm|ok|okay|sure|do it|no|cancel|nevermind|never mind|stop|abort)\b/.test(lower)) {
+            processVoice(text);
+            continue;
+          }
+
+          if (commandMode) {
+            // This phrase is the command that follows the wake word
+            clearTimeout(cmdTimeout);
+            commandMode = false;
+            setDotMode('idle');
+            processVoice(text);
+
+          } else if (lower.includes(WAKE_WORD)) {
+            // Wake word detected — check if command is in the same phrase
+            var parts    = lower.split(WAKE_WORD);
+            var afterWake = parts[parts.length - 1]
+              .replace(/^[\s,!.]+/, '').trim();
+
+            if (afterWake.length > 2) {
+              // Full command in one phrase: "Hey Nova open teachers"
+              processVoice(afterWake);
+            } else {
+              // Wake word only — enter command mode
+              commandMode = true;
+              setDotMode('command');
+              showToast('✨ Hey! What can I do for you?');
+              // Auto-cancel if no command follows within 5 s
+              cmdTimeout = setTimeout(function() {
+                commandMode = false;
+                setDotMode('idle');
+                showToast('Nova: I didn\'t catch that. Try again!');
+              }, 5000);
+            }
+          }
+        }
+      };
+
+      recognition.onerror = function(e) {
+        if (e.error === 'not-allowed') {
+          setDotMode('hidden'); // mic permission denied — hide dot
+        }
+      };
+
+      // Auto-restart so it stays always-on
+      recognition.onend = function() {
+        if (!commandMode) {
+          setTimeout(function() {
+            try { recognition.start(); } catch(ex) {}
+          }, 200);
+        }
+      };
+
+      recognition.start();
+    }
+
+    function setDotMode(mode) {
+      var dot = document.getElementById('nova-dot');
+      dot.classList.remove('command-mode', 'hidden');
+      if (mode === 'command') dot.classList.add('command-mode');
+      if (mode === 'hidden')  dot.classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      var t = document.getElementById('voice-toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._hide);
+      t._hide = setTimeout(function(){ t.classList.remove('show'); }, 2500);
+    }
+
+    /* ── EduBot chat ────────────────────────────────────────────── */
+    var edubotOpen    = false;
+    var edubotHistory = [];
+    var edubotBusy    = false;
+
+    function edubotToggle() {
+      edubotOpen = !edubotOpen;
+      document.getElementById('edubot-panel').classList.toggle('open', edubotOpen);
+      document.getElementById('edubot-fab-open').style.display  = edubotOpen ? 'none' : '';
+      document.getElementById('edubot-fab-close').style.display = edubotOpen ? ''     : 'none';
+      if (edubotOpen) setTimeout(function(){ document.getElementById('edubot-input').focus(); }, 80);
+    }
+
+    function edubotSend() {
+      if (edubotBusy) return;
+      var input = document.getElementById('edubot-input');
+      var msg   = input.value.trim();
+      if (!msg) return;
+      edubotAppend('user', msg);
+      input.value = '';
+      edubotHistory.push({ role: 'user', content: msg });
+      edubotBusy = true;
+      document.getElementById('edubot-send').disabled = true;
+      var typingEl = edubotShowTyping();
+      fetch('/chat/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, history: edubotHistory.slice(0, -1) })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        typingEl.remove();
+        var reply = data.reply || 'Sorry, something went wrong.';
+        edubotAppend('bot', reply);
+        edubotHistory.push({ role: 'assistant', content: reply });
+        if (edubotHistory.length > 20) edubotHistory = edubotHistory.slice(-20);
+      })
+      .catch(function(){ typingEl.remove(); edubotAppend('bot', 'Connection error. Please try again.'); })
+      .finally(function(){
+        edubotBusy = false;
+        document.getElementById('edubot-send').disabled = false;
+        document.getElementById('edubot-input').focus();
+      });
+    }
+
+    function ebEscape(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function ebInline(s) {
+      return ebEscape(s)
+        .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+        .replace(/`([^`]+)`/g,'<code style="background:rgba(63,97,255,0.08);padding:1px 5px;border-radius:4px;font-size:.82em;">$1</code>');
+    }
+    function ebMarkdown(text) {
+      var lines = text.split('\n');
+      var html  = '';
+      var ulOpen = false, olOpen = false;
+      function closeLists() {
+        if (ulOpen) { html += '</ul>'; ulOpen = false; }
+        if (olOpen) { html += '</ol>'; olOpen = false; }
+      }
+      for (var i = 0; i < lines.length; i++) {
+        var raw  = lines[i];
+        var trim = raw.trim();
+        var olM  = trim.match(/^(\d+)\.\s+(.+)$/);
+        var ulM  = trim.match(/^[-*•]\s+(.+)$/);
+        if (olM) {
+          if (ulOpen) { html += '</ul>'; ulOpen = false; }
+          if (!olOpen) { html += '<ol>'; olOpen = true; }
+          html += '<li>' + ebInline(olM[2]) + '</li>';
+        } else if (ulM) {
+          if (olOpen) { html += '</ol>'; olOpen = false; }
+          if (!ulOpen) { html += '<ul>'; ulOpen = true; }
+          html += '<li>' + ebInline(ulM[1]) + '</li>';
+        } else {
+          closeLists();
+          if (trim === '') { html += '<div style="height:6px"></div>'; }
+          else { html += '<p style="margin:0 0 4px">' + ebInline(trim) + '</p>'; }
+        }
+      }
+      closeLists();
+      return html;
+    }
+
+    function edubotAppend(role, text) {
+      var msgs = document.getElementById('edubot-messages');
+      var div  = document.createElement('div');
+      div.className = 'eb-bubble ' + (role === 'user' ? 'eb-bubble-user' : 'eb-bubble-bot');
+      if (role === 'bot') { div.innerHTML = ebMarkdown(text); }
+      else                { div.textContent = text; }
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function edubotShowTyping() {
+      var msgs = document.getElementById('edubot-messages');
+      var el   = document.createElement('div');
+      el.className = 'eb-typing';
+      el.innerHTML = '<div class="eb-dot"></div><div class="eb-dot"></div><div class="eb-dot"></div>';
+      msgs.appendChild(el);
+      msgs.scrollTop = msgs.scrollHeight;
+      return el;
+    }
+
+    // Start Nova when page loads
+    window.addEventListener('load', function() { startNova(); });
+
+    // ── Mobile hamburger sidebar ──────────────────────────────────
+    (function() {
+      var ham     = document.getElementById('mob-ham');
+      var overlay = document.getElementById('mob-overlay');
+      if (!ham) return;
+
+      function openSidebar() {
+        var sb = document.querySelector('.sidebar');
+        if (sb) sb.classList.add('mob-open');
+        overlay.classList.add('active');
+        ham.innerHTML = '✕';
+        ham.setAttribute('aria-label', 'Close navigation');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeSidebar() {
+        var sb = document.querySelector('.sidebar');
+        if (sb) sb.classList.remove('mob-open');
+        overlay.classList.remove('active');
+        ham.innerHTML = '&#9776;';
+        ham.setAttribute('aria-label', 'Open navigation');
+        document.body.style.overflow = '';
+      }
+
+      ham.addEventListener('click', function() {
+        var sb = document.querySelector('.sidebar');
+        if (sb && sb.classList.contains('mob-open')) closeSidebar(); else openSidebar();
+      });
+      overlay.addEventListener('click', closeSidebar);
+
+      // Close when a nav link is clicked on mobile
+      document.addEventListener('click', function(e) {
+        if (window.innerWidth <= 900 && e.target.closest && e.target.closest('.nav-link')) {
+          setTimeout(closeSidebar, 120);
+        }
+      });
+
+      // Reset on resize to desktop
+      window.addEventListener('resize', function() {
+        if (window.innerWidth > 900) {
+          closeSidebar();
+          document.body.style.overflow = '';
+        }
+      });
+    })();
+  </script>
+
+</div>
+</body>
+</html>

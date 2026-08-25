@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{var _t=localStorage.getItem('eduadvisor-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coordinator Dashboard — EduAdvisor</title>
+  <style>
+    :root {
+      --panel: #ffffff;
+      --accent: #059669;
+      --accent-light: rgba(5,150,105,0.08);
+      --text: #1f2b44;
+      --muted: #6d7a98;
+      --border: rgba(5,150,105,0.14);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #d1fae5 0%, #edfdf7 55%, #f9fbff 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Top nav ── */
+    .topbar {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(5,150,105,0.06);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-dot { width: 13px; height: 13px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .brand-title { font-size: 1.05rem; font-weight: 700; }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .coord-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent-light); color: var(--accent);
+      font-size: 0.78rem; font-weight: 700; padding: 5px 14px;
+      border-radius: 20px; letter-spacing: .03em;
+    }
+    .logout-btn {
+      padding: 8px 18px; border: 1.5px solid rgba(5,150,105,0.3);
+      border-radius: 12px; background: none; font-family: inherit;
+      font-size: 0.85rem; font-weight: 700; color: var(--accent);
+      cursor: pointer; text-decoration: none; transition: background .15s;
+    }
+    .logout-btn:hover { background: var(--accent-light); }
+
+    /* ── Page ── */
+    .page { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 4px; }
+    .page-header p  { color: var(--muted); font-size: 0.92rem; }
+
+    /* ── Tab bar ── */
+    .tab-bar { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
+    .tab {
+      padding: 10px 24px; border: 1.5px solid var(--border); border-radius: 14px;
+      background: var(--panel); font-family: inherit; font-size: 0.9rem; font-weight: 700;
+      color: var(--muted); cursor: pointer; transition: all .18s;
+    }
+    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tab:hover:not(.active) { background: var(--accent-light); color: var(--text); }
+
+    /* ── Stats row ── */
+    .stats-row { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+    .stat-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 20px; padding: 22px 28px;
+      box-shadow: 0 6px 20px rgba(5,150,105,0.06);
+      flex: 1; min-width: 130px;
+    }
+    .stat-label { font-size: 0.75rem; font-weight: 700; color: var(--muted);
+                  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+    .stat-value { font-size: 2rem; font-weight: 800; }
+    .stat-total .stat-value   { color: var(--accent); }
+    .stat-pending .stat-value { color: #d97706; }
+    .stat-waiting .stat-value { color: #2563eb; }
+    .stat-found .stat-value   { color: #16a34a; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      background: var(--panel); border: 1.5px dashed rgba(5,150,105,0.2);
+      border-radius: 22px; padding: 60px; text-align: center; color: var(--muted);
+    }
+    .empty-state .icon { font-size: 2.8rem; margin-bottom: 14px; }
+
+    /* ── Lost & Found cards ── */
+    .report-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 22px; overflow: hidden;
+      box-shadow: 0 6px 20px rgba(5,150,105,0.05); margin-bottom: 20px;
+    }
+    .report-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 24px; background: var(--accent-light);
+      border-bottom: 1px solid var(--border);
+    }
+    .loc-icon {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      display: grid; place-items: center; font-size: 1.1rem; flex-shrink: 0;
+    }
+    .report-meta { flex: 1; min-width: 0; }
+    .report-location { font-size: 0.95rem; font-weight: 700; }
+    .report-time { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+
+    .status-badge {
+      font-size: 0.72rem; font-weight: 700; padding: 4px 13px;
+      border-radius: 20px; letter-spacing: .03em; flex-shrink: 0;
+    }
+    .badge-pending { background: rgba(245,158,11,0.12); color: #d97706; }
+    .badge-waiting { background: rgba(37,99,235,0.10);  color: #2563eb; }
+    .badge-found   { background: rgba(22,163,74,0.12);  color: #16a34a; }
+
+    .report-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+    .info-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 12px 24px;
+    }
+    .info-item { display: flex; flex-direction: column; gap: 3px; }
+    .info-label { font-size: 0.71rem; font-weight: 700; color: var(--muted);
+                  text-transform: uppercase; letter-spacing: .04em; }
+    .info-value { font-size: 0.9rem; font-weight: 600; word-break: break-word; }
+    .desc-block {
+      background: #f0fdf9; border: 1px solid rgba(5,150,105,0.12);
+      border-radius: 12px; padding: 14px 18px;
+    }
+    .desc-label { font-size: 0.71rem; font-weight: 700; color: var(--muted);
+                  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+    .desc-text { font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .report-img {
+      max-width: 100%; max-height: 300px; border-radius: 12px;
+      object-fit: contain; border: 1px solid var(--border); display: block;
+    }
+    .action-section {
+      border-top: 1px solid var(--border); padding: 20px 24px;
+      background: #f8fffe; display: flex; flex-direction: column; gap: 12px;
+    }
+    .action-title { font-size: 0.8rem; font-weight: 700; color: var(--muted);
+                    text-transform: uppercase; letter-spacing: .04em; }
+    .action-note {
+      width: 100%; border: 1.5px solid rgba(5,150,105,0.2);
+      border-radius: 10px; font-family: inherit; font-size: 0.9rem;
+      color: var(--text); background: #fff; padding: 10px 14px;
+      outline: none; resize: vertical; min-height: 72px; transition: border-color .2s;
+    }
+    .action-note:focus { border-color: var(--accent); }
+    .action-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .btn-found {
+      padding: 10px 22px; border: none; border-radius: 12px;
+      background: #16a34a; color: #fff;
+      font-size: 0.88rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity .18s;
+    }
+    .btn-wait {
+      padding: 10px 22px; border: none; border-radius: 12px;
+      background: #2563eb; color: #fff;
+      font-size: 0.88rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity .18s;
+    }
+    .btn-found:hover, .btn-wait:hover { opacity: 0.85; }
+
+    /* ── Course Overview ── */
+    .course-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 22px; overflow: hidden;
+      box-shadow: 0 6px 20px rgba(5,150,105,0.05); margin-bottom: 20px;
+    }
+    .course-header {
+      display: flex; align-items: flex-start; gap: 16px;
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+    }
+    .course-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: var(--accent); color: #fff;
+      display: grid; place-items: center; font-size: 1.3rem; flex-shrink: 0;
+    }
+    .course-title-block { flex: 1; min-width: 0; }
+    .course-code { font-size: 0.78rem; font-weight: 700; color: var(--accent);
+                   letter-spacing: .06em; text-transform: uppercase; margin-bottom: 3px; }
+    .course-name { font-size: 1.05rem; font-weight: 800; margin-bottom: 4px; }
+    .cat-badge {
+      display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; background: rgba(5,150,105,0.1); color: var(--accent);
+      letter-spacing: .03em;
+    }
+    .enroll-count {
+      display: flex; flex-direction: column; align-items: center;
+      background: var(--accent-light); border-radius: 16px; padding: 10px 18px; flex-shrink: 0;
+    }
+    .enroll-num  { font-size: 1.8rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .enroll-text { font-size: 0.7rem; font-weight: 700; color: var(--muted); margin-top: 3px; }
+
+    .course-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+    .detail-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 16px;
+    }
+    .detail-box {
+      background: #f8faff; border: 1px solid rgba(63,97,255,0.08);
+      border-radius: 14px; padding: 14px 18px;
+    }
+    .detail-box.green { background: #f0fdf9; border-color: rgba(5,150,105,0.1); }
+    .detail-box.purple { background: #f5f3ff; border-color: rgba(109,40,217,0.1); }
+    .detail-box.amber { background: #fffbeb; border-color: rgba(245,158,11,0.12); }
+    .detail-heading {
+      font-size: 0.71rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;
+    }
+    .detail-val { font-size: 0.92rem; font-weight: 700; color: var(--text); }
+    .detail-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+    /* Student list */
+    .student-toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 18px; border: 1.5px solid var(--border);
+      border-radius: 12px; background: none; font-family: inherit;
+      font-size: 0.85rem; font-weight: 700; color: var(--accent); cursor: pointer;
+      transition: background .15s; width: fit-content;
+    }
+    .student-toggle:hover { background: var(--accent-light); }
+    .student-list { display: none; margin-top: 12px; }
+    .student-table {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    }
+    .student-table th {
+      background: var(--accent-light); color: var(--accent);
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .04em; padding: 10px 16px; text-align: left;
+    }
+    .student-table td { padding: 10px 16px; font-size: 0.88rem; border-top: 1px solid var(--border); }
+    .student-table tr:nth-child(even) td { background: #f8fffe; }
+    .no-students {
+      padding: 20px; text-align: center; color: var(--muted); font-size: 0.88rem;
+    }
+
+    /* ── Counselling Bookings table ── */
+    .booking-table-wrap {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 22px; overflow: hidden;
+      box-shadow: 0 6px 20px rgba(5,150,105,0.05);
+    }
+    .booking-table { width: 100%; border-collapse: collapse; }
+    .booking-table thead tr {
+      background: rgba(99,102,241,0.08);
+      border-bottom: 2px solid rgba(99,102,241,0.15);
+    }
+    .booking-table th {
+      padding: 14px 18px; text-align: left;
+      font-size: 0.75rem; font-weight: 700; color: #6366f1;
+      text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+    }
+    .booking-table td {
+      padding: 13px 18px; font-size: 0.88rem;
+      border-top: 1px solid var(--border); vertical-align: middle;
+    }
+    .booking-table tbody tr:nth-child(even) td { background: #f8fffe; }
+    .booking-table tbody tr:hover td { background: rgba(99,102,241,0.04); }
+    .cell-name    { font-weight: 700; }
+    .cell-id      { font-family: monospace; font-size: 0.82rem; color: var(--muted); }
+    .cell-teacher { font-weight: 600; color: #6d28d9; }
+    .cell-date    { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+    .cell-reason  { max-width: 220px; color: var(--muted); }
+    .slot-badge {
+      display: inline-block; background: rgba(99,102,241,0.1); color: #6366f1;
+      font-size: 0.78rem; font-weight: 700; padding: 4px 12px;
+      border-radius: 20px; white-space: nowrap;
+    }
+
+    @media (max-width: 640px) {
+      .topbar { padding: 0 16px; }
+      .page { padding: 20px 16px; }
+      .stats-row, .detail-grid { flex-direction: column; }
+      .course-header { flex-wrap: wrap; }
+      .booking-table-wrap { overflow-x: auto; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-title">EduAdvisor</div>
+    </div>
+    <div class="topbar-right">
+      <span class="coord-badge">🗂️ <span th:text="${coordinatorName}">Coordinator</span></span>
+      <a href="/logout" class="logout-btn">Logout 🚪</a>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <div class="page-header">
+      <h1>Coordinator Dashboard</h1>
+      <p>Manage lost &amp; found reports and review course enrolments across campus.</p>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab active" id="tab-lf"       onclick="showTab('lf')">🔍 Lost &amp; Found</button>
+      <button class="tab" id="tab-courses"           onclick="showTab('courses')">📚 Course Overview</button>
+      <button class="tab" id="tab-counselling"       onclick="showTab('counselling')">📅 Counselling Bookings</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 1 : Lost & Found                                    -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="section-lf">
+
+      <div class="stats-row">
+        <div class="stat-card stat-total">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" th:text="${totalCount}">0</div>
+        </div>
+        <div class="stat-card stat-pending">
+          <div class="stat-label">⏳ Pending</div>
+          <div class="stat-value" th:text="${pendingCount}">0</div>
+        </div>
+        <div class="stat-card stat-waiting">
+          <div class="stat-label">🕐 Waiting</div>
+          <div class="stat-value" th:text="${waitingCount}">0</div>
+        </div>
+        <div class="stat-card stat-found">
+          <div class="stat-label">✅ Found</div>
+          <div class="stat-value" th:text="${foundCount}">0</div>
+        </div>
+        <div class="stat-card" style="border-color:rgba(99,102,241,0.2);">
+          <div class="stat-label">📅 Bookings</div>
+          <div class="stat-value" style="color:#6366f1;" th:text="${bookingCount}">0</div>
+        </div>
+      </div>
+
+      <div th:if="${reports.empty}" class="empty-state">
+        <div class="icon">📭</div>
+        <p>No lost &amp; found reports submitted yet.</p>
+      </div>
+
+      <div th:each="r : ${reports}" class="report-card">
+        <div class="report-header">
+          <div class="loc-icon">📍</div>
+          <div class="report-meta">
+            <div class="report-location" th:text="${r.location}">Library</div>
+            <div class="report-time"
+                 th:text="${#temporals.format(r.reportedAt, 'dd MMM yyyy, hh:mm a')}">12 May 2026</div>
+          </div>
+          <span class="status-badge badge-pending" th:if="${r.status == null or r.status == 'PENDING'}">⏳ Pending</span>
+          <span class="status-badge badge-waiting" th:if="${r.status == 'WAITING'}">🕐 Waiting</span>
+          <span class="status-badge badge-found"   th:if="${r.status == 'FOUND'}">✅ Found</span>
+        </div>
+
+        <div class="report-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Student Name</span>
+              <span class="info-value" th:text="${r.studentName}">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Student ID</span>
+              <span class="info-value" th:text="${r.studentId}">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Email</span>
+              <span class="info-value" th:text="${r.studentEmail}">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Location</span>
+              <span class="info-value" th:text="${r.location}">—</span>
+            </div>
+          </div>
+          <div class="desc-block">
+            <div class="desc-label">Description</div>
+            <div class="desc-text" th:text="${r.description}">—</div>
+          </div>
+          <img class="report-img"
+               th:if="${r.imageBase64 != null}"
+               th:src="'data:' + ${r.imageType} + ';base64,' + ${r.imageBase64}"
+               alt="Item photo" />
+        </div>
+
+        <div class="action-section">
+          <div class="action-title">📋 Update Status</div>
+          <form th:action="@{/lost-found/status/{id}(id=${r.id})}" method="post">
+            <input type="hidden" name="status" value="FOUND" />
+            <textarea class="action-note" name="coordinatorNote"
+                      placeholder="Optional note to the student…"
+                      th:text="${r.coordinatorNote}"></textarea>
+            <div class="action-btns">
+              <button type="submit" class="btn-found"
+                      onclick="this.form.status.value='FOUND'">
+                ✅ Mark as Found
+              </button>
+              <button type="submit" class="btn-wait"
+                      onclick="this.form.status.value='WAITING'">
+                🕐 Ask to Wait
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div><!-- /section-lf -->
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 2 : Course Overview                                 -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="section-courses" style="display:none">
+
+      <div th:if="${courseStats.empty}" class="empty-state">
+        <div class="icon">📚</div>
+        <p>No courses found in the system.</p>
+      </div>
+
+      <div th:each="cs : ${courseStats}" class="course-card">
+
+        <div class="course-header">
+          <div class="course-icon">📖</div>
+          <div class="course-title-block">
+            <div class="course-code" th:text="${cs.course.code}">CS201</div>
+            <div class="course-name" th:text="${cs.course.name}">Course Name</div>
+            <span class="cat-badge" th:text="${cs.course.category}">Core</span>
+          </div>
+          <div class="enroll-count">
+            <div class="enroll-num" th:text="${cs.studentCount}">0</div>
+            <div class="enroll-text">Students</div>
+          </div>
+        </div>
+
+        <div class="course-body">
+
+          <div class="detail-grid">
+
+            <!-- Teacher info -->
+            <div class="detail-box purple">
+              <div class="detail-heading">👨‍🏫 Instructor</div>
+              <div class="detail-val" th:text="${cs.course.instructor}">—</div>
+              <div class="detail-sub" th:if="${cs.teacher != null}"
+                   th:text="${cs.teacher.teacherId + ' · ' + cs.teacher.designation}">TCH-001 · Assoc. Prof.</div>
+              <div class="detail-sub" th:if="${cs.teacher == null}" style="color:#d97706;">ID not matched</div>
+            </div>
+
+            <!-- Schedule / Routine -->
+            <div class="detail-box green">
+              <div class="detail-heading">📅 Routine</div>
+              <div class="detail-val" th:text="${cs.formattedDays}">Mon, Wed</div>
+              <div class="detail-sub"
+                   th:text="${cs.course.startTime + ' – ' + cs.course.endTime}">09:00 – 10:30</div>
+            </div>
+
+            <!-- Room -->
+            <div class="detail-box amber">
+              <div class="detail-heading">🚪 Room</div>
+              <div class="detail-val" th:text="${cs.course.room}">—</div>
+            </div>
+
+            <!-- Credits -->
+            <div class="detail-box">
+              <div class="detail-heading">🎓 Credits</div>
+              <div class="detail-val" th:text="${cs.course.credits}">3</div>
+            </div>
+
+          </div>
+
+          <!-- Enrolled students -->
+          <div>
+            <button class="student-toggle"
+                    th:id="${'toggle-' + cs.course.code}"
+                    th:attr="data-count=${cs.studentCount},data-code=${cs.course.code}"
+                    onclick="toggleStudents(this)">
+              ▼ Show Students (<span th:text="${cs.studentCount}">0</span>)
+            </button>
+
+            <div class="student-list" th:id="${'students-' + cs.course.code}">
+
+              <div class="no-students" th:if="${cs.students.empty}">
+                No students enrolled in this course yet.
+              </div>
+
+              <table class="student-table" th:unless="${cs.students.empty}">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Program</th>
+                    <th>Year</th>
+                    <th>GPA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="s,idx : ${cs.students}">
+                    <td th:text="${idx.count}">1</td>
+                    <td th:text="${s.studentId}">—</td>
+                    <td th:text="${s.name}">—</td>
+                    <td th:text="${s.program}">—</td>
+                    <td th:text="${s.academicYear}">—</td>
+                    <td th:text="${s.gpa}">—</td>
+                  </tr>
+                </tbody>
+              </table>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /section-courses -->
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 3 : Counselling Bookings                            -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="section-counselling" style="display:none">
+
+      <div th:if="${bookingData.empty}" class="empty-state">
+        <div class="icon">📅</div>
+        <p>No counselling bookings have been made yet.</p>
+      </div>
+
+      <div th:unless="${bookingData.empty}" class="booking-table-wrap">
+        <table class="booking-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student Name</th>
+              <th>Student ID</th>
+              <th>Teacher</th>
+              <th>Time Slot</th>
+              <th>Reason</th>
+              <th>Booked At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="bd,idx : ${bookingData}">
+              <td th:text="${idx.count}">1</td>
+              <td class="cell-name" th:text="${bd.studentName}">—</td>
+              <td class="cell-id"   th:text="${bd.booking.studentId}">—</td>
+              <td class="cell-teacher" th:text="${bd.booking.teacherName}">—</td>
+              <td class="cell-slot">
+                <span class="slot-badge" th:text="${bd.booking.slot}">—</span>
+              </td>
+              <td class="cell-reason" th:text="${bd.booking.reason != null ? bd.booking.reason : '—'}">—</td>
+              <td class="cell-date"
+                  th:text="${#temporals.format(bd.booking.bookedAt, 'dd MMM yyyy, hh:mm a')}">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /section-counselling -->
+
+  </div>
+
+  <script>
+    /* ── Tab navigation ── */
+    function showTab(name) {
+      document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('section-' + name).style.display = 'block';
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+
+    function toggleStudents(btn) {
+      const code = btn.dataset.code;
+      const list = document.getElementById('students-' + code);
+      const isHidden = list.style.display === 'none' || list.style.display === '';
+      list.style.display = isHidden ? 'block' : 'none';
+      const count = btn.dataset.count;
+      btn.innerHTML = isHidden
+        ? '▲ Hide Students (' + count + ')'
+        : '▼ Show Students (' + count + ')';
+    }
+  </script>
+<style>
+  #theme-fab{position:fixed;top:24px;right:24px;width:50px;height:50px;border-radius:50%;background:#fff;border:2px solid rgba(63,97,255,.15);box-shadow:0 4px 18px rgba(0,0,0,.10);cursor:pointer;font-size:1.3rem;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;z-index:9998;}
+  #theme-fab:hover{transform:scale(1.12);}
+  html[data-theme="dark"] #theme-fab{background:#1e2235;border-color:rgba(107,138,255,.28);box-shadow:0 4px 18px rgba(0,0,0,.40);}
+  html[data-theme="dark"]{--panel:#1a1d2a;--accent:#6b8aff;--text:#e2e8f5;--muted:#8892b0;--border:rgba(107,138,255,.18);}
+  html[data-theme="dark"] body{background:radial-gradient(circle at top,#1a1f3c 0%,#0f1117 55%,#080a10 100%)!important;}
+  html[data-theme="dark"] .sidebar{background:var(--panel)!important;}
+  html[data-theme="dark"] .nav-link{background:#20243a!important;}
+  html[data-theme="dark"] .nav-link:hover,html[data-theme="dark"] .nav-link.active{background:rgba(107,138,255,.16)!important;}
+  html[data-theme="dark"] .profile-card{background:#161a28!important;}
+  html[data-theme="dark"] input:not([type="submit"]):not([type="button"]):not([type="file"]),html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#1a1e30!important;color:var(--text)!important;border-color:rgba(107,138,255,.22)!important;}
+  html[data-theme="dark"] .card,html[data-theme="dark"] .stat-card,html[data-theme="dark"] .report-card{background:var(--panel)!important;}
+</style>
+<button id="theme-fab" onclick="toggleTheme()" title="Toggle dark / light mode"><span id="theme-icon">🌙</span></button>
+<script>
+  function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')||'light',n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('eduadvisor-theme',n);var i=document.getElementById('theme-icon');if(i)i.textContent=n==='dark'?'☀️':'🌙';}
+  document.getElementById('theme-icon').textContent=(localStorage.getItem('eduadvisor-theme')==='dark')?'☀️':'🌙';
+</script>
+</body>
+</html>

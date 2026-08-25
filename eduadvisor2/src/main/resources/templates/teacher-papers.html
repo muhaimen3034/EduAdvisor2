@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{var _t=localStorage.getItem('eduadvisor-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Submit Papers — EduAdvisor</title>
+  <style>
+    :root {
+      --bg: #f5f3ff;
+      --panel: #ffffff;
+      --accent: #6d28d9;
+      --accent-light: rgba(109,40,217,0.08);
+      --text: #1f2b44;
+      --muted: #6d7a98;
+      --border: rgba(109,40,217,0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #ede9fe 0%, #f5f3ff 55%, #faf9ff 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      min-height: 100vh;
+      gap: 24px;
+      padding: 24px;
+    }
+    .sidebar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 28px 20px;
+      box-shadow: 0 24px 60px rgba(109,40,217,0.07);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      align-self: start;
+      position: sticky;
+      top: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .brand-title { font-size: 1.05rem; font-weight: 700; }
+    .brand-sub   { font-size: 0.73rem; color: var(--muted); font-weight: 500; }
+    .nav-list { list-style: none; display: grid; gap: 10px; }
+    .nav-link {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 18px; text-decoration: none; color: var(--text);
+      font-weight: 600; background: #f9f8ff; border-radius: 18px;
+      transition: background .2s, transform .2s;
+    }
+    .nav-link:hover, .nav-link.active { background: var(--accent-light); transform: translateX(2px); }
+    .nav-icon { color: var(--accent); font-size: 1.05rem; }
+    .profile-card {
+      padding: 18px; border-radius: 22px;
+      background: linear-gradient(135deg, rgba(109,40,217,0.07), rgba(124,58,237,0.03));
+      border: 1px solid var(--border);
+    }
+    .role-badge {
+      display: inline-block; background: var(--accent); color: #fff;
+      font-size: 0.68rem; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; margin-bottom: 8px; letter-spacing: .04em; text-transform: uppercase;
+    }
+    .profile-card h2 { font-size: 1rem; margin-bottom: 3px; }
+    .profile-card p  { color: var(--muted); font-size: 0.83rem; }
+
+    .main { display: flex; flex-direction: column; gap: 24px; }
+
+    .hero {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 32px; padding: 32px 36px;
+      box-shadow: 0 20px 50px rgba(109,40,217,0.06);
+    }
+    .hero h1 { font-size: 1.9rem; font-weight: 800; margin-bottom: 6px; }
+    .hero p  { color: var(--muted); font-size: 0.95rem; }
+
+    /* Alerts */
+    .alert {
+      padding: 14px 20px; border-radius: 16px;
+      font-size: 0.9rem; font-weight: 600;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .alert-success { background: rgba(34,197,94,0.1); color: #16a34a; border: 1px solid rgba(34,197,94,0.25); }
+    .alert-error   { background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.25); }
+
+    /* Form panel */
+    .form-panel {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 28px; padding: 30px 32px;
+      box-shadow: 0 8px 24px rgba(109,40,217,0.05);
+    }
+    .form-panel h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 24px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label {
+      font-size: 0.8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+    }
+    .form-control {
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: 0.92rem;
+      color: var(--text);
+      background: #faf9ff;
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+    }
+    .form-control:focus { border-color: var(--accent); }
+
+    /* File zone */
+    .file-zone {
+      border: 2px dashed rgba(109,40,217,0.25);
+      border-radius: 16px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: #faf9ff;
+      user-select: none;
+    }
+    .file-zone:hover, .file-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    .file-zone-icon  { font-size: 2.2rem; margin-bottom: 8px; }
+    .file-zone-title { font-weight: 700; font-size: 0.97rem; margin-bottom: 4px; }
+    .file-zone-sub   { font-size: 0.8rem; color: var(--muted); }
+
+    /* Preview grid */
+    .preview-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .thumb-wrapper { position: relative; }
+    .preview-thumb {
+      width: 88px; height: 88px; border-radius: 12px;
+      object-fit: cover; border: 2px solid var(--border);
+      display: block;
+    }
+    .thumb-remove {
+      position: absolute; top: -7px; right: -7px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #ef4444; color: #fff;
+      border: 2px solid #fff; cursor: pointer;
+      font-size: 0.85rem; font-weight: 700;
+      display: grid; place-items: center; line-height: 1;
+    }
+    .thumb-remove:hover { background: #dc2626; }
+
+    .preview-meta { margin-top: 12px; display: flex; align-items: center; gap: 12px; }
+    .preview-count { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+    .btn-add-more {
+      padding: 7px 16px;
+      background: var(--accent-light);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.82rem; font-weight: 700; color: var(--accent);
+      cursor: pointer; transition: background .15s;
+    }
+    .btn-add-more:hover { background: rgba(109,40,217,0.14); border-color: var(--accent); }
+
+    .btn-submit {
+      margin-top: 24px;
+      padding: 14px 32px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 16px;
+      font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; transition: opacity .2s, transform .2s;
+      width: 100%;
+    }
+    .btn-submit:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* History */
+    .history-panel {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 28px; padding: 28px 30px;
+      box-shadow: 0 8px 24px rgba(109,40,217,0.05);
+    }
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-title { font-size: 1.1rem; font-weight: 700; }
+
+    .paper-card {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      background: #faf9ff;
+    }
+    .paper-card:last-child { margin-bottom: 0; }
+
+    .paper-top { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+    .paper-type-badge {
+      display: inline-block; font-size: 0.7rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px; text-transform: uppercase;
+      letter-spacing: .05em; flex-shrink: 0; margin-top: 2px;
+    }
+    .badge-quiz    { background: rgba(63,97,255,0.1);   color: #3f61ff; }
+    .badge-makeup  { background: rgba(245,158,11,0.1);  color: #b45309; }
+    .badge-midterm { background: rgba(168,85,247,0.12); color: #7c3aed; }
+
+    .paper-title { font-size: 0.97rem; font-weight: 700; flex: 1; }
+    .paper-meta  { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+
+    .paper-images-toggle {
+      background: none; border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 7px 14px;
+      font-size: 0.8rem; font-weight: 700; color: var(--accent);
+      cursor: pointer; transition: background .15s;
+    }
+    .paper-images-toggle:hover { background: var(--accent-light); }
+    .btn-delete-paper {
+      background: none; border: 1.5px solid rgba(239,68,68,0.3);
+      border-radius: 10px; padding: 7px 14px;
+      font-size: 0.8rem; font-weight: 700; color: #dc2626;
+      cursor: pointer; transition: background .15s, border-color .15s;
+    }
+    .btn-delete-paper:hover { background: rgba(239,68,68,0.08); border-color: #dc2626; }
+
+    .paper-images { display: none; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .paper-images.open { display: flex; }
+    .paper-img {
+      width: 120px; height: 120px; object-fit: cover;
+      border-radius: 12px; border: 2px solid var(--border);
+      cursor: pointer; transition: transform .2s;
+    }
+    .paper-img:hover { transform: scale(1.04); }
+
+    .empty-state { text-align: center; color: var(--muted); padding: 40px; font-size: 0.9rem; }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+    /* Lightbox */
+    .lightbox {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.82); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    .lightbox-close { position: absolute; top: 20px; right: 24px; font-size: 2rem; color: #fff; cursor: pointer; line-height: 1; }
+
+    #mob-ham {
+      display: none; position: fixed; top: 14px; left: 14px; z-index: 9990;
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--accent); color: #fff; border: none;
+      font-size: 20px; cursor: pointer;
+      align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(109,40,217,0.35);
+    }
+    #mob-overlay { display: none; position: fixed; inset: 0; background: rgba(10,15,40,0.42); z-index: 9980; backdrop-filter: blur(2px); }
+    #mob-overlay.active { display: block; }
+
+    @media (max-width: 900px) {
+      #mob-ham { display: flex; }
+      .layout { grid-template-columns: 1fr !important; padding: 16px; }
+      .sidebar {
+        position: fixed !important; left: -310px !important; top: 0 !important;
+        height: 100vh !important; width: 280px !important; max-width: 85vw !important;
+        z-index: 9985 !important; border-radius: 0 24px 24px 0 !important;
+        overflow-y: auto !important;
+        transition: left 0.28s cubic-bezier(0.4,0,0.2,1) !important;
+      }
+      .sidebar.mob-open { left: 0 !important; box-shadow: 6px 0 40px rgba(0,0,0,0.20) !important; }
+      .form-grid { grid-template-columns: 1fr; }
+      #theme-fab { top: 14px !important; right: 14px !important; width: 44px !important; height: 44px !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-title">EduAdvisor</div>
+        <div class="brand-sub">Teacher Portal</div>
+      </div>
+    </div>
+    <ul class="nav-list">
+      <li><a href="/teacher-dashboard.html"   class="nav-link"><span class="nav-icon">🏠</span>Dashboard</a></li>
+      <li><a href="/teacher-discussions.html" class="nav-link"><span class="nav-icon">💬</span>Student Questions</a></li>
+      <li><a href="/teacher-papers.html"      class="nav-link active"><span class="nav-icon">📄</span>Submit Papers</a></li>
+      <li><a href="/logout"                   class="nav-link"><span class="nav-icon">🚪</span>Logout</a></li>
+    </ul>
+    <div class="profile-card">
+      <div class="role-badge">Teacher</div>
+      <h2 th:text="${teacherName}">Teacher Name</h2>
+      <p th:text="${teacherId}">TCH-001</p>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <section class="hero">
+      <h1>Submit Student Papers</h1>
+      <p>Upload quiz or mid-term exam papers for a student — they'll be notified by email and can view all images in their portal.</p>
+    </section>
+
+    <div th:if="${param.success}" class="alert alert-success">
+      ✅ Paper submitted successfully — the student has been notified by email.
+    </div>
+    <div th:if="${param.deleted}" class="alert alert-success">
+      🗑️ Paper deleted successfully.
+    </div>
+    <div th:if="${param.error}" class="alert alert-error">
+      ❌ Submission failed. Please select a valid student and enter a title.
+    </div>
+
+    <!-- Submission form -->
+    <div class="form-panel">
+      <h2>New Paper Submission</h2>
+      <form action="/papers/submit" method="post" enctype="multipart/form-data" id="paper-form">
+
+        <!-- Hidden file input — triggered by zone click or Add More button -->
+        <input type="file" id="images-input" name="images" accept="image/*" multiple style="display:none" />
+
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label class="form-label" for="studentId">Student</label>
+            <select id="studentId" name="studentId" class="form-control" required>
+              <option value="">Select a student…</option>
+              <option th:each="s : ${students}"
+                      th:value="${s.studentId}"
+                      th:text="${s.name + ' (' + s.studentId + ')'}">
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="type">Paper Type</label>
+            <select id="type" name="type" class="form-control" required>
+              <option value="Quiz-1">Quiz-1</option>
+              <option value="Quiz-2">Quiz-2</option>
+              <option value="Quiz-3">Quiz-3</option>
+              <option value="Makeup Quiz">Makeup Quiz</option>
+              <option value="Midterm">Midterm</option>
+            </select>
+          </div>
+
+          <div class="form-group full">
+            <label class="form-label" for="title">Title</label>
+            <input id="title" type="text" name="title" class="form-control"
+                   placeholder="e.g. CS301 Quiz-1 — Data Structures" required />
+          </div>
+
+          <div class="form-group full">
+            <label class="form-label">Paper Images (one or more)</label>
+
+            <!-- Drop / click zone -->
+            <div class="file-zone" id="file-zone">
+              <div class="file-zone-icon">🖼️</div>
+              <div class="file-zone-title">Click or drag images here</div>
+              <div class="file-zone-sub">JPG · PNG · WEBP — select many files at once, or use Add More to keep adding</div>
+            </div>
+
+            <!-- Preview area (hidden until files are chosen) -->
+            <div id="preview-wrapper" style="display:none; margin-top:14px;">
+              <div class="preview-grid" id="preview-area"></div>
+              <div class="preview-meta">
+                <span class="preview-count" id="preview-count"></span>
+                <button type="button" class="btn-add-more" id="btn-add-more">+ Add More Images</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <button type="submit" class="btn-submit">📤 Submit Paper</button>
+      </form>
+    </div>
+
+    <!-- Submission history -->
+    <div class="history-panel">
+      <div class="section-header">
+        <span class="section-title">📋 Submitted Papers</span>
+        <span style="font-size:0.83rem;color:var(--muted);"
+              th:text="${submittedPapers.size() + ' total'}">0 total</span>
+      </div>
+
+      <div th:if="${submittedPapers.empty}" class="empty-state">
+        <div class="icon">📭</div>
+        <p>You haven't submitted any papers yet.</p>
+      </div>
+
+      <div th:each="paper : ${submittedPapers}" class="paper-card">
+        <div class="paper-top">
+          <span class="paper-type-badge"
+                th:classappend="${paper.type == 'Midterm'} ? 'badge-midterm' : (paper.type == 'Makeup Quiz' ? 'badge-makeup' : 'badge-quiz')"
+                th:text="${paper.type}">Type</span>
+          <div style="flex:1;">
+            <div class="paper-title" th:text="${paper.title}">Title</div>
+            <div class="paper-meta">
+              To: <strong th:text="${paper.studentName}">Student</strong>
+              (<span th:text="${paper.studentId}"></span>) &nbsp;·&nbsp;
+              <span th:text="${#temporals.format(paper.submittedAt, 'dd MMM yyyy, HH:mm')}">date</span>
+              &nbsp;·&nbsp; <span th:text="${paper.images.size() + ' image(s)'}">0 images</span>
+            </div>
+          </div>
+          <button class="paper-images-toggle" th:if="${!paper.images.empty}"
+                  onclick="toggleImages(this)">View Images ▾</button>
+          <form th:action="'/papers/delete/' + ${paper.id}" method="post" style="display:inline;"
+                onsubmit="return confirm('Delete this paper? This cannot be undone.');">
+            <button type="submit" class="btn-delete-paper" title="Delete paper">🗑️ Delete</button>
+          </form>
+        </div>
+
+        <div class="paper-images" th:if="${!paper.images.empty}">
+          <img th:each="img : ${paper.images}"
+               th:src="|/papers/image/${img.id}|"
+               class="paper-img" alt="Paper image"
+               onclick="openLightbox(this.src)" />
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">✕</span>
+  <img id="lightbox-img" src="" alt="Full size" onclick="event.stopPropagation()" />
+</div>
+
+<script>
+  // ── Multi-image uploader ──────────────────────────────────────────────────
+  const fileInput   = document.getElementById('images-input');
+  const fileZone    = document.getElementById('file-zone');
+  const addMoreBtn  = document.getElementById('btn-add-more');
+  const previewWrap = document.getElementById('preview-wrapper');
+  let selectedFiles = [];
+
+  // Zone click → open file picker
+  fileZone.addEventListener('click', () => fileInput.click());
+
+  // "Add More" → open file picker (files will be appended to selection)
+  addMoreBtn.addEventListener('click', () => fileInput.click());
+
+  // File picker change — APPEND to existing selection
+  fileInput.addEventListener('change', function () {
+    selectedFiles = [...selectedFiles, ...Array.from(this.files)];
+    this.value = ''; // reset so the same file can be picked again
+    renderPreviews();
+  });
+
+  // Drag-and-drop
+  fileZone.addEventListener('dragover', e => { e.preventDefault(); fileZone.classList.add('dragover'); });
+  fileZone.addEventListener('dragleave', () => fileZone.classList.remove('dragover'));
+  fileZone.addEventListener('drop', e => {
+    e.preventDefault();
+    fileZone.classList.remove('dragover');
+    const imgs = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    selectedFiles = [...selectedFiles, ...imgs];
+    renderPreviews();
+  });
+
+  function renderPreviews() {
+    const area    = document.getElementById('preview-area');
+    const countEl = document.getElementById('preview-count');
+    area.innerHTML = '';
+
+    if (selectedFiles.length === 0) {
+      previewWrap.style.display = 'none';
+      return;
+    }
+    previewWrap.style.display = 'block';
+    countEl.textContent = selectedFiles.length + ' image(s) ready to submit';
+
+    // Capture index in closure with let to avoid stale i on remove
+    selectedFiles.forEach((file, idx) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'thumb-wrapper';
+
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.className = 'preview-thumb';
+
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'thumb-remove';
+        rm.title = 'Remove this image';
+        rm.textContent = '×';
+        rm.addEventListener('click', () => {
+          selectedFiles.splice(idx, 1);
+          renderPreviews();
+        });
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(rm);
+        area.appendChild(wrapper);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Before form submit: inject selectedFiles into the file input via DataTransfer
+  document.getElementById('paper-form').addEventListener('submit', function (e) {
+    if (selectedFiles.length === 0) {
+      e.preventDefault();
+      alert('Please select at least one image before submitting.');
+      return;
+    }
+    const dt = new DataTransfer();
+    selectedFiles.forEach(f => dt.items.add(f));
+    fileInput.files = dt.files;
+  });
+
+  // ── Submitted papers helpers ──────────────────────────────────────────────
+  function toggleImages(btn) {
+    const panel = btn.closest('.paper-card').querySelector('.paper-images');
+    panel.classList.toggle('open');
+    btn.textContent = panel.classList.contains('open') ? 'Hide Images ▴' : 'View Images ▾';
+  }
+
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+</script>
+<style>
+  #theme-fab{position:fixed;top:24px;right:24px;width:50px;height:50px;border-radius:50%;background:#fff;border:2px solid rgba(63,97,255,.15);box-shadow:0 4px 18px rgba(0,0,0,.10);cursor:pointer;font-size:1.3rem;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;z-index:9998;}
+  #theme-fab:hover{transform:scale(1.12);}
+  html[data-theme="dark"] #theme-fab{background:#1e2235;border-color:rgba(107,138,255,.28);box-shadow:0 4px 18px rgba(0,0,0,.40);}
+  html[data-theme="dark"]{--panel:#1a1d2a;--accent:#6b8aff;--text:#e2e8f5;--muted:#8892b0;--border:rgba(107,138,255,.18);}
+  html[data-theme="dark"] body{background:radial-gradient(circle at top,#1a1f3c 0%,#0f1117 55%,#080a10 100%)!important;}
+  html[data-theme="dark"] .sidebar{background:var(--panel)!important;}
+  html[data-theme="dark"] .nav-link{background:#20243a!important;}
+  html[data-theme="dark"] .nav-link:hover,html[data-theme="dark"] .nav-link.active{background:rgba(107,138,255,.16)!important;}
+  html[data-theme="dark"] .profile-card{background:#161a28!important;}
+  html[data-theme="dark"] input:not([type="submit"]):not([type="button"]):not([type="file"]),html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#1a1e30!important;color:var(--text)!important;border-color:rgba(107,138,255,.22)!important;}
+  html[data-theme="dark"] .form-card,html[data-theme="dark"] .papers-card{background:var(--panel)!important;}
+</style>
+<button id="theme-fab" onclick="toggleTheme()" title="Toggle dark / light mode"><span id="theme-icon">🌙</span></button>
+<script>
+  function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')||'light',n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('eduadvisor-theme',n);var i=document.getElementById('theme-icon');if(i)i.textContent=n==='dark'?'☀️':'🌙';}
+  document.getElementById('theme-icon').textContent=(localStorage.getItem('eduadvisor-theme')==='dark')?'☀️':'🌙';
+</script>
+</body>
+</html>

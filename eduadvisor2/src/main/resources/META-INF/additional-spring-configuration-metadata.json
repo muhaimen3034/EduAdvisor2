@@ -1,0 +1,42 @@
+{"properties": [
+  {
+    "name": "spring.h2.console.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.h2.console.enabled'"
+  },
+  {
+    "name": "spring.h2.console.path",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.h2.console.path'"
+  },
+  {
+    "name": "anthropic.api.key",
+    "type": "java.lang.String",
+    "description": "A description for 'anthropic.api.key'"
+  },
+  {
+    "name": "set",
+    "type": "java.lang.String",
+    "description": "A description for 'set'"
+  },
+  {
+    "name": "gemini.api.key",
+    "type": "java.lang.String",
+    "description": "A description for 'gemini.api.key'"
+  },
+  {
+    "name": "linkedin.fetch.email",
+    "type": "java.lang.String",
+    "description": "LinkedIn account email used to fetch profile data via linkedin-api Python package"
+  },
+  {
+    "name": "linkedin.fetch.password",
+    "type": "java.lang.String",
+    "description": "LinkedIn account password used to fetch profile data via linkedin-api Python package"
+  },
+  {
+    "name": "groq.api.key",
+    "type": "java.lang.String",
+    "description": "Groq API key for AI analysis. Get a free key at https://console.groq.com"
+  }
+]}

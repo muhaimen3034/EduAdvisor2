@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduAdvisor — Sign In</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: "Inter", system-ui, sans-serif;
+      background: radial-gradient(circle at top left, #dbe4ff 0%, #eef3ff 45%, #f9fbff 100%);
+      color: #1f2b44;
+      padding: 24px;
+    }
+
+    /* ── Card shell ── */
+    .card {
+      background: #ffffff;
+      border: 1px solid rgba(63, 97, 255, 0.12);
+      border-radius: 32px;
+      padding: 48px 44px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 28px 70px rgba(47, 67, 120, 0.11);
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 36px;
+    }
+    .brand-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .brand-title { font-size: 1.08rem; font-weight: 700; }
+
+    /* ── Panel transitions ── */
+    .panel { display: none; flex-direction: column; }
+    .panel.active { display: flex; }
+
+    /* ── Role selector ── */
+    .role-heading { margin: 0 0 8px; font-size: 1.85rem; font-weight: 800; }
+    .role-sub     { margin: 0 0 32px; color: #6d7a98; font-size: 0.95rem; line-height: 1.6; }
+
+    .role-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    .role-card {
+      border: 2px solid rgba(63,97,255,0.14);
+      border-radius: 22px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.18s, background 0.18s, transform 0.18s, box-shadow 0.18s;
+      background: #f8faff;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .role-card:hover {
+      border-color: var(--card-accent, #3f61ff);
+      background: rgba(63,97,255,0.04);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(63,97,255,0.12);
+    }
+    .role-card.teacher-card { --card-accent: #6d28d9; }
+    .role-card.teacher-card:hover {
+      border-color: #6d28d9;
+      background: rgba(109,40,217,0.04);
+      box-shadow: 0 16px 40px rgba(109,40,217,0.12);
+    }
+    .role-card.coord-card { --card-accent: #059669; }
+    .role-card.coord-card:hover {
+      border-color: #059669;
+      background: rgba(5,150,105,0.04);
+      box-shadow: 0 16px 40px rgba(5,150,105,0.12);
+    }
+
+    .role-icon {
+      font-size: 2.6rem;
+      width: 68px; height: 68px; border-radius: 20px;
+      display: grid; place-items: center;
+    }
+    .student-card .role-icon { background: rgba(63,97,255,0.1); }
+    .teacher-card .role-icon { background: rgba(109,40,217,0.1); }
+    .coord-card   .role-icon { background: rgba(5,150,105,0.1); }
+
+    .role-card h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+    .role-card p  { margin: 0; font-size: 0.8rem; color: #6d7a98; line-height: 1.45; }
+
+    /* ── Login form shared ── */
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: none; background: none; padding: 0;
+      color: #6d7a98; font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; margin-bottom: 24px;
+      transition: color 0.15s;
+    }
+    .back-btn:hover { color: #1f2b44; }
+
+    .login-title    { margin: 0 0 6px; font-size: 1.8rem; font-weight: 800; }
+    .login-subtitle { margin: 0 0 28px; color: #6d7a98; font-size: 0.95rem; }
+
+    .role-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: 20px; padding: 4px 14px; font-size: 0.78rem;
+      font-weight: 700; margin-bottom: 24px; letter-spacing: 0.03em;
+    }
+    .badge-student { background: rgba(63,97,255,0.1); color: #3f61ff; }
+    .badge-teacher { background: rgba(109,40,217,0.1); color: #6d28d9; }
+    .badge-coord   { background: rgba(5,150,105,0.1);  color: #059669; }
+
+    label {
+      display: block; font-size: 0.83rem;
+      font-weight: 600; margin-bottom: 6px;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%; padding: 13px 16px;
+      border: 1.5px solid rgba(63, 97, 255, 0.2);
+      border-radius: 12px; font-size: 0.95rem;
+      font-family: inherit; color: #1f2b44;
+      background: #f8faff; outline: none;
+      margin-bottom: 18px; transition: border-color 0.2s, background 0.2s;
+    }
+    input:focus { border-color: #3f61ff; background: #fff; }
+
+    .panel.teacher-panel input:focus { border-color: #6d28d9; }
+    .panel.coord-panel input:focus   { border-color: #059669; }
+    .coord-panel .hint-table {
+      background: rgba(5,150,105,0.04);
+      border-color: rgba(5,150,105,0.1);
+    }
+
+    button[type="submit"] {
+      width: 100%; padding: 14px; border: none;
+      border-radius: 14px; font-size: 1rem;
+      font-weight: 700; font-family: inherit;
+      cursor: pointer; margin-top: 4px;
+      transition: opacity 0.18s;
+      color: #fff;
+    }
+    button[type="submit"]:hover { opacity: 0.88; }
+    .btn-student { background: #3f61ff; }
+    .btn-teacher { background: #6d28d9; }
+    .btn-coord   { background: #059669; }
+
+    .error-msg {
+      margin-top: 16px; padding: 11px 16px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 10px; color: #dc2626;
+      font-size: 0.88rem; font-weight: 600; text-align: center;
+    }
+
+    .hint-table {
+      margin-top: 20px;
+      padding: 14px 16px;
+      background: #f8faff;
+      border: 1px solid rgba(63,97,255,0.1);
+      border-radius: 12px;
+    }
+    .hint-head {
+      font-size: 0.78rem; color: #6d7a98; margin-bottom: 8px;
+    }
+    .hint-table table { width: 100%; border-collapse: collapse; }
+    .hint-table td {
+      font-size: 0.78rem; padding: 3px 6px; vertical-align: middle;
+    }
+    .hint-table td:first-child { font-family: monospace; white-space: nowrap; }
+    .hint-table .muted { color: #6d7a98; }
+    .teacher-panel .hint-table {
+      background: rgba(109,40,217,0.04);
+      border-color: rgba(109,40,217,0.1);
+    }
+
+    @media (max-width: 600px) {
+      .card { padding: 36px 24px; }
+      .role-cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body th:attr="data-active-role=${activeRole}">
+
+  <div class="card">
+
+    <!-- PANEL 1: Role Selection -->
+    <div class="panel active" id="panel-role">
+      <div class="brand">
+        <div class="brand-dot" style="background:#3f61ff;"></div>
+        <div class="brand-title">EduAdvisor</div>
+      </div>
+      <h1 class="role-heading">Welcome!</h1>
+      <p class="role-sub">Please select your role to continue to the sign-in page.</p>
+
+      <div class="role-cards">
+        <div class="role-card student-card" id="pick-student">
+          <div class="role-icon">🎓</div>
+          <h3>Student</h3>
+          <p>Access courses, schedule, and academic resources</p>
+        </div>
+        <div class="role-card teacher-card" id="pick-teacher">
+          <div class="role-icon">👨‍🏫</div>
+          <h3>Teacher</h3>
+          <p>View your courses and enrolled students</p>
+        </div>
+        <div class="role-card coord-card" id="pick-coord">
+          <div class="role-icon">🗂️</div>
+          <h3>Coordinator</h3>
+          <p>Manage lost &amp; found reports from campus</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 2: Student Login -->
+    <div class="panel student-panel" id="panel-student">
+      <div class="brand">
+        <div class="brand-dot" style="background:#3f61ff;"></div>
+        <div class="brand-title">EduAdvisor</div>
+      </div>
+
+      <button class="back-btn" onclick="showPanel('role')">&#8592; Back</button>
+      <div class="role-badge badge-student">🎓 Student Portal</div>
+      <h1 class="login-title">Student Sign In</h1>
+      <p class="login-subtitle">Enter your student credentials to continue.</p>
+
+      <form th:action="@{/login}" method="post">
+        <label for="studentId">Student ID</label>
+        <input type="text" id="studentId" name="studentId" placeholder="e.g. 251-16-056" required />
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Password" required />
+
+        <button type="submit" class="btn-student">Sign In as Student</button>
+      </form>
+
+      <div class="error-msg" th:if="${error != null and activeRole == 'student'}" th:text="${error}"></div>
+      <div class="hint-table">
+        <p class="hint-head">Demo student accounts:</p>
+        <table>
+          <tr><td><strong>251-16-056</strong></td><td>password123</td><td class="muted">Muhaimen (batch 251)</td></tr>
+          <tr><td><strong>251-16-061</strong></td><td>pass1234</td><td class="muted">Nafisa (batch 251)</td></tr>
+          <tr><td><strong>241-16-101</strong></td><td>pass1234</td><td class="muted">Nabila (batch 241)</td></tr>
+          <tr><td><strong>241-16-109</strong></td><td>pass1234</td><td class="muted">Faria (batch 241)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- PANEL 3: Teacher Login -->
+    <div class="panel teacher-panel" id="panel-teacher">
+      <div class="brand">
+        <div class="brand-dot" style="background:#6d28d9;"></div>
+        <div class="brand-title">EduAdvisor</div>
+      </div>
+
+      <button class="back-btn" onclick="showPanel('role')">&#8592; Back</button>
+      <div class="role-badge badge-teacher">👨‍🏫 Teacher Portal</div>
+      <h1 class="login-title">Teacher Sign In</h1>
+      <p class="login-subtitle">Enter your teacher credentials to continue.</p>
+
+      <form th:action="@{/teacher-login}" method="post">
+        <label for="teacherId">Teacher ID</label>
+        <input type="text" id="teacherId" name="teacherId" placeholder="e.g. TCH-001" required />
+
+        <label for="teacherPassword">Password</label>
+        <input type="password" id="teacherPassword" name="password" placeholder="Password" required />
+
+        <button type="submit" class="btn-teacher">Sign In as Teacher</button>
+      </form>
+
+      <div class="error-msg" th:if="${error != null and activeRole == 'teacher'}" th:text="${error}"></div>
+      <div class="hint-table">
+        <p class="hint-head">Demo teacher accounts (all use <strong>teach123</strong>):</p>
+        <table>
+          <tr><td><strong>TCH-001</strong></td><td class="muted">Mahbub Hossain</td><td class="muted">CS201, CS307</td></tr>
+          <tr><td><strong>TCH-002</strong></td><td class="muted">Mehedi Hasan</td><td class="muted">CS301, CS304</td></tr>
+          <tr><td><strong>TCH-003</strong></td><td class="muted">Nasimul K. Sohel</td><td class="muted">CS302, CS303 · <em>Advisor 241</em></td></tr>
+          <tr><td><strong>TCH-004</strong></td><td class="muted">Dr. Ahmed</td><td class="muted">MATH101, MATH102</td></tr>
+          <tr><td><strong>TCH-005</strong></td><td class="muted">Dr. Fatema Khanam</td><td class="muted">CS401</td></tr>
+          <tr><td><strong>TCH-006</strong></td><td class="muted">Dr. Rahman</td><td class="muted">CS101</td></tr>
+          <tr><td><strong>TCH-007</strong></td><td class="muted">Sarwar Hossain</td><td class="muted">CS305, ENG101</td></tr>
+          <tr><td><strong>TCH-008</strong></td><td class="muted">Md. Azam Khan</td><td class="muted">CS306, HUM201 · <em>Advisor 251</em></td></tr>
+          <tr><td><strong>TCH-009</strong></td><td class="muted">Md. Israfil</td><td class="muted">Coordinator</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- PANEL 4: Coordinator Login -->
+    <div class="panel coord-panel" id="panel-coord">
+      <div class="brand">
+        <div class="brand-dot" style="background:#059669;"></div>
+        <div class="brand-title">EduAdvisor</div>
+      </div>
+
+      <button class="back-btn" onclick="showPanel('role')">&#8592; Back</button>
+      <div class="role-badge badge-coord">🗂️ Coordinator Portal</div>
+      <h1 class="login-title">Coordinator Sign In</h1>
+      <p class="login-subtitle">Enter your coordinator credentials to continue.</p>
+
+      <form th:action="@{/coord-login}" method="post">
+        <label for="coordUsername">Username</label>
+        <input type="text" id="coordUsername" name="username" placeholder="coordinator" required />
+
+        <label for="coordPassword">Password</label>
+        <input type="password" id="coordPassword" name="password" placeholder="Password" required />
+
+        <button type="submit" class="btn-coord">Sign In as Coordinator</button>
+      </form>
+
+      <div class="error-msg" th:if="${error != null and activeRole == 'coordinator'}" th:text="${error}"></div>
+      <div class="hint-table">
+        <p class="hint-head">Demo coordinator account:</p>
+        <table>
+          <tr><td><strong>coordinator</strong></td><td>coord123</td></tr>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function showPanel(name) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+    }
+
+    document.getElementById('pick-student').addEventListener('click', () => showPanel('student'));
+    document.getElementById('pick-teacher').addEventListener('click', () => showPanel('teacher'));
+    document.getElementById('pick-coord').addEventListener('click',   () => showPanel('coord'));
+
+    // If server returned an error, go straight to the relevant login panel
+    const activeRole = document.body.dataset.activeRole;
+    if (activeRole === 'student')      showPanel('student');
+    else if (activeRole === 'teacher') showPanel('teacher');
+    else if (activeRole === 'coordinator') showPanel('coord');
+  </script>
+</body>
+</html>

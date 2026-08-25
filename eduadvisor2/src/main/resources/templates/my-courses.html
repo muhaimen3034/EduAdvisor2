@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{var _t=localStorage.getItem('eduadvisor-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Courses — Student Advice</title>
+  <style>
+    :root {
+      --bg: #eef3ff;
+      --panel: #ffffff;
+      --accent: #3f61ff;
+      --text: #1f2b44;
+      --muted: #6d7a98;
+      --border: rgba(63, 97, 255, 0.12);
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #dbe4ff 0%, #eef3ff 55%, #f9fbff 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 28px 20px;
+      box-shadow: 0 24px 60px rgba(47, 67, 120, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      align-self: start;
+      position: sticky;
+      top: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); }
+    .brand-title { font-size: 1.05rem; font-weight: 700; }
+    .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .nav-item { border-radius: 18px; overflow: hidden; }
+    .nav-link {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px; text-decoration: none;
+      color: var(--text); font-weight: 600; background: #f9fbff;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: rgba(63, 97, 255, 0.12);
+      transform: translateX(2px);
+    }
+    .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; color: var(--accent); }
+    .profile-card {
+      padding: 18px; border-radius: 22px;
+      background: #f8faff; border: 1px solid rgba(63, 97, 255, 0.08);
+    }
+    .profile-card h2 { margin: 0 0 6px; font-size: 1.1rem; }
+    .profile-card p  { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+    /* ── Main ── */
+    .main { display: flex; flex-direction: column; gap: 24px; }
+
+    /* ── Gate panels (fee states) ── */
+    .gate-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 48px 40px;
+      box-shadow: 0 24px 60px rgba(47, 67, 120, 0.06);
+      text-align: center;
+      display: none;
+    }
+    .gate-panel.visible { display: block; }
+
+    .gate-icon { font-size: 3.5rem; margin-bottom: 16px; }
+    .gate-title { font-size: 1.6rem; font-weight: 800; margin: 0 0 10px; }
+    .gate-desc { color: var(--muted); font-size: 0.98rem; line-height: 1.7; max-width: 520px; margin: 0 auto 28px; }
+
+    .fee-confirm-box {
+      background: rgba(63, 97, 255, 0.04);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 24px 28px;
+      max-width: 480px;
+      margin: 0 auto 28px;
+      text-align: left;
+    }
+    .fee-check-row {
+      display: flex; align-items: flex-start; gap: 14px;
+      margin-bottom: 20px;
+    }
+    .fee-check-row input[type="checkbox"] {
+      width: 20px; height: 20px; margin-top: 2px;
+      accent-color: var(--accent); flex-shrink: 0; cursor: pointer;
+    }
+    .fee-check-row label {
+      font-size: 0.95rem; font-weight: 600; line-height: 1.5; cursor: pointer;
+    }
+    .fee-note {
+      font-size: 0.82rem; color: var(--muted);
+      background: rgba(63, 97, 255, 0.05);
+      border-radius: 10px; padding: 10px 14px;
+    }
+
+    .btn-submit-fee {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 16px;
+      padding: 14px 36px; font-size: 0.98rem; font-weight: 700;
+      cursor: pointer; transition: opacity 0.18s, transform 0.18s;
+    }
+    .btn-submit-fee:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    .btn-submit-fee:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .pending-banner {
+      display: flex; align-items: center; gap: 16px;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1.5px solid rgba(245, 158, 11, 0.3);
+      border-radius: 18px; padding: 18px 24px;
+      max-width: 540px; margin: 0 auto 24px; text-align: left;
+    }
+    .pending-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #f59e0b; flex-shrink: 0;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .coordinator-card {
+      display: flex; align-items: center; gap: 16px;
+      background: #f8faff; border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px 20px;
+      max-width: 380px; margin: 0 auto;
+    }
+    .coord-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, #6d28d9, #3f61ff);
+      display: grid; place-items: center;
+      font-size: 1.2rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .coord-info { text-align: left; }
+    .coord-name { font-size: 1rem; font-weight: 700; }
+    .coord-role { font-size: 0.8rem; color: var(--muted); margin: 2px 0; }
+    .coord-email { font-size: 0.78rem; color: var(--accent); }
+
+    /* ── Approved state ── */
+    .approved-banner {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.04));
+      border: 1.5px solid rgba(34, 197, 94, 0.3);
+      border-radius: 22px; padding: 20px 28px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .approved-banner .check { font-size: 2rem; }
+    .approved-banner strong { font-size: 1.1rem; font-weight: 800; color: #16a34a; }
+    .approved-banner p { margin: 4px 0 0; font-size: 0.88rem; color: var(--muted); }
+
+    /* ── Hero ── */
+    .hero {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 32px; padding: 32px 36px;
+      box-shadow: 0 24px 60px rgba(47, 67, 120, 0.06);
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    }
+    .hero h1 { margin: 0 0 8px; font-size: 2rem; }
+    .hero p { margin: 0; color: var(--muted); line-height: 1.7; }
+    .hero-stats { display: flex; gap: 20px; flex-shrink: 0; }
+    .hero-stat {
+      background: rgba(63, 97, 255, 0.07); border: 1px solid var(--border);
+      border-radius: 18px; padding: 16px 24px; text-align: center;
+    }
+    .hero-stat-val { font-size: 1.8rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .hero-stat-label { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+
+    /* ── Section card ── */
+    .section-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 28px; padding: 28px;
+      box-shadow: 0 12px 36px rgba(34, 60, 80, 0.05);
+    }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .section-title { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 700; margin: 0; }
+
+    /* ── Enrolled grid ── */
+    .enrolled-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .enrolled-card {
+      border-radius: 18px; padding: 18px;
+      border: 1px solid var(--border); background: #f9fbff;
+      display: flex; flex-direction: column; gap: 8px; position: relative;
+    }
+    .enrolled-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .enrolled-code { font-size: 0.85rem; font-weight: 800; color: var(--accent); letter-spacing: 0.03em; }
+    .enrolled-name { font-size: 0.93rem; font-weight: 600; line-height: 1.35; }
+    .enrolled-meta { font-size: 0.8rem; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+    .remove-btn {
+      background: rgba(239, 68, 68, 0.08); color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px;
+      padding: 5px 12px; font-size: 0.78rem; font-weight: 700;
+      cursor: pointer; transition: background 0.18s; white-space: nowrap; flex-shrink: 0;
+    }
+    .remove-btn:hover { background: rgba(239, 68, 68, 0.16); }
+    .empty-state { text-align: center; padding: 32px 0; color: var(--muted); }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-state p { margin: 0; font-size: 0.95rem; }
+
+    /* ── Catalog ── */
+    .catalog-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .search-input {
+      flex: 1; min-width: 200px; padding: 11px 16px;
+      border: 1px solid var(--border); border-radius: 14px;
+      background: #f9fbff; font-size: 0.92rem; font-family: inherit;
+      color: var(--text); outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(63, 97, 255, 0.1); }
+    .filter-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 9px 16px; border-radius: 12px; border: 1px solid var(--border);
+      background: #f9fbff; font-size: 0.84rem; font-weight: 600;
+      color: var(--muted); cursor: pointer;
+      transition: background 0.18s, color 0.18s, border-color 0.18s;
+    }
+    .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .filter-btn:hover:not(.active) { background: rgba(63, 97, 255, 0.08); color: var(--accent); }
+
+    .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+
+    .course-card {
+      border-radius: 20px; border: 1.5px solid var(--border);
+      background: var(--panel); padding: 22px;
+      display: flex; flex-direction: column; gap: 12px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .course-card:hover { box-shadow: 0 12px 32px rgba(47, 67, 120, 0.1); transform: translateY(-2px); }
+    .course-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .course-code-badge {
+      font-size: 0.82rem; font-weight: 800; color: var(--accent);
+      background: rgba(63, 97, 255, 0.08); border-radius: 8px;
+      padding: 4px 10px; letter-spacing: 0.03em; white-space: nowrap;
+    }
+    .cat-badge { font-size: 0.75rem; font-weight: 600; border-radius: 8px; padding: 4px 10px; white-space: nowrap; }
+    .cat-cs      { background: rgba(63, 97, 255, 0.08);  color: var(--accent); }
+    .cat-math    { background: rgba(245, 158, 11, 0.12); color: #b45309; }
+    .cat-general { background: rgba(16, 185, 129, 0.1);  color: #047857; }
+    .course-name { font-size: 1rem; font-weight: 700; line-height: 1.35; margin: 0; }
+    .course-details { display: flex; flex-direction: column; gap: 5px; font-size: 0.82rem; color: var(--muted); }
+    .course-details span { display: flex; align-items: center; gap: 6px; }
+    .credits-badge {
+      display: inline-block; font-size: 0.76rem; font-weight: 700;
+      background: rgba(63, 97, 255, 0.06); color: var(--accent);
+      border-radius: 8px; padding: 3px 9px;
+    }
+
+    /* ── Teacher row in course card ── */
+    .teacher-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 12px;
+      background: rgba(63, 97, 255, 0.04);
+      border: 1px solid var(--border);
+    }
+    .teacher-avatar-sm {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, #6d28d9, #3f61ff);
+      display: grid; place-items: center;
+      font-size: 0.82rem; font-weight: 800; color: #fff;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .teacher-avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
+    .teacher-row-name { font-size: 0.85rem; font-weight: 700; flex: 1; }
+    .teacher-row-desg { font-size: 0.75rem; color: var(--muted); }
+    .btn-view-profile {
+      font-size: 0.75rem; font-weight: 700; color: var(--accent);
+      background: rgba(63, 97, 255, 0.08); border: none;
+      border-radius: 8px; padding: 5px 11px; cursor: pointer;
+      transition: background 0.18s; white-space: nowrap;
+    }
+    .btn-view-profile:hover { background: rgba(63, 97, 255, 0.16); }
+
+    .enroll-btn {
+      width: 100%; padding: 11px; border-radius: 13px; border: none;
+      font-size: 0.88rem; font-weight: 700; cursor: pointer;
+      transition: background 0.18s, opacity 0.18s;
+    }
+    .enroll-btn.not-enrolled { background: var(--accent); color: #fff; }
+    .enroll-btn.not-enrolled:hover { opacity: 0.88; }
+    .enroll-btn.enrolled {
+      background: rgba(34, 197, 94, 0.1); color: #16a34a;
+      border: 1px solid rgba(34, 197, 94, 0.3); cursor: default;
+    }
+
+    .strip-blue   { border-left: 4px solid #3f61ff; }
+    .strip-purple { border-left: 4px solid #8b5cf6; }
+    .strip-green  { border-left: 4px solid #10b981; }
+    .strip-amber  { border-left: 4px solid #f59e0b; }
+    .strip-cyan   { border-left: 4px solid #06b6d4; }
+
+    /* ── Batch Curriculum ── */
+    .batch-section {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 28px; padding: 28px;
+      box-shadow: 0 12px 36px rgba(34,60,80,0.05);
+    }
+    .batch-header {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
+    }
+    .batch-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg,#1a355e,#3f61ff);
+      color: #fff; border-radius: 10px; padding: 5px 14px;
+      font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em;
+    }
+    .batch-title { font-size: 1.1rem; font-weight: 800; margin: 0; }
+    .batch-sub   { font-size: 0.83rem; color: var(--muted); margin: 4px 0 0; }
+
+    .batch-sub-head {
+      font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted); margin: 18px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .batch-sub-head::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .batch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+
+    .batch-card {
+      border-radius: 16px; padding: 16px;
+      border: 1.5px solid var(--border); background: #f9fbff;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .batch-card.closed-card { border-color: rgba(63,97,255,0.25); background: rgba(63,97,255,0.03); }
+    .batch-card.extra-card  { border-color: rgba(16,185,129,0.25); background: rgba(16,185,129,0.03); }
+
+    .batch-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .batch-code  { font-size: 0.82rem; font-weight: 800; color: var(--accent); }
+    .batch-name  { font-size: 0.92rem; font-weight: 700; line-height: 1.3; }
+    .batch-meta  { font-size: 0.78rem; color: var(--muted); }
+
+    .credit-tag {
+      font-size: 0.68rem; font-weight: 800; border-radius: 6px;
+      padding: 3px 8px; white-space: nowrap; flex-shrink: 0;
+    }
+    .tag-closed { background: rgba(63,97,255,0.12); color: #3f61ff; }
+    .tag-extra  { background: rgba(16,185,129,0.12); color: #047857; }
+
+    .btn-lock {
+      width: 100%; padding: 9px; border-radius: 11px;
+      background: rgba(63,97,255,0.06); color: var(--accent);
+      border: 1px dashed rgba(63,97,255,0.3);
+      font-size: 0.82rem; font-weight: 700; cursor: default;
+    }
+    .btn-enroll-extra {
+      width: 100%; padding: 9px; border-radius: 11px; border: none;
+      font-size: 0.82rem; font-weight: 700; cursor: pointer;
+      transition: background 0.18s, opacity 0.18s;
+    }
+    .btn-enroll-extra.not-enrolled { background: #10b981; color: #fff; }
+    .btn-enroll-extra.not-enrolled:hover { opacity: 0.88; }
+    .btn-enroll-extra.enrolled {
+      background: rgba(16,185,129,0.1); color: #047857;
+      border: 1px solid rgba(16,185,129,0.3); cursor: default;
+    }
+
+    /* ── Teacher Profile Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15, 20, 40, 0.55);
+      backdrop-filter: blur(6px);
+      z-index: 200; display: none; place-items: center;
+    }
+    .modal-overlay.open { display: grid; }
+    .modal-box {
+      background: var(--panel); border-radius: 28px;
+      padding: 36px; max-width: 460px; width: 90%;
+      box-shadow: 0 32px 80px rgba(47, 67, 120, 0.18);
+      position: relative; animation: slideUp 0.28s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .modal-close {
+      position: absolute; top: 18px; right: 18px;
+      background: #f0f4ff; border: none; border-radius: 10px;
+      width: 34px; height: 34px; font-size: 1rem; cursor: pointer;
+      display: grid; place-items: center; transition: background 0.18s;
+    }
+    .modal-close:hover { background: rgba(63, 97, 255, 0.12); }
+    .modal-photo {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: linear-gradient(135deg, #6d28d9, #3f61ff);
+      display: grid; place-items: center;
+      font-size: 2rem; font-weight: 800; color: #fff;
+      margin: 0 auto 18px; overflow: hidden;
+      border: 3px solid rgba(63, 97, 255, 0.15);
+    }
+    .modal-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .modal-teacher-name { font-size: 1.3rem; font-weight: 800; text-align: center; margin: 0 0 4px; }
+    .modal-desg { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+    .modal-info-grid { display: grid; gap: 10px; }
+    .modal-info-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; border-radius: 12px; background: #f9fbff;
+      font-size: 0.87rem;
+    }
+    .modal-info-icon { font-size: 1rem; flex-shrink: 0; }
+    .modal-info-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .modal-info-val { font-weight: 700; }
+    .modal-courses-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+    .modal-course-chip {
+      background: rgba(63, 97, 255, 0.08); color: var(--accent);
+      font-size: 0.75rem; font-weight: 700; border-radius: 8px; padding: 4px 10px;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1f2b44; color: #fff;
+      padding: 12px 24px; border-radius: 14px;
+      font-size: 0.9rem; font-weight: 600;
+      opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease;
+      z-index: 300; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; padding: 16px; }
+      .sidebar { position: static; }
+      .hero { flex-direction: column; }
+      .hero-stats { flex-wrap: wrap; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-title">Student Advice</div>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item"><a href="dashboard.html"     class="nav-link"><span class="nav-icon">🏠</span>Home</a></li>
+      <li class="nav-item"><a href="advice.html"        class="nav-link"><span class="nav-icon">🎯</span>Advice</a></li>
+      <li class="nav-item"><a href="schedule.html"      class="nav-link"><span class="nav-icon">📅</span>Schedule</a></li>
+      <li class="nav-item"><a href="resources.html"     class="nav-link"><span class="nav-icon">📚</span>Resources</a></li>
+      <li class="nav-item"><a href="counselling.html"   class="nav-link"><span class="nav-icon">🗓️</span>Counselling Hours</a></li>
+      <li class="nav-item"><a href="CreaditTransfer.html" class="nav-link"><span class="nav-icon">🔄</span>Credit Transfer</a></li>
+      <li class="nav-item"><a href="my-courses.html"    class="nav-link active"><span class="nav-icon">📋</span>My Courses</a></li>
+      <li class="nav-item"><a href="grade-calculator.html" class="nav-link"><span class="nav-icon">🎓</span>Grade Calculator</a></li>
+      <li class="nav-item"><a href="learning-gap.html"  class="nav-link"><span class="nav-icon">🧠</span>Learning Gaps</a></li>
+      <li class="nav-item"><a href="study-coach.html"   class="nav-link"><span class="nav-icon">⚡</span>AI Study Coach</a></li>
+      <li class="nav-item"><a href="https://diuqbank.com/#google_vignette" class="nav-link" target="_blank" rel="noopener noreferrer"><span class="nav-icon">📝</span>Q-Bank</a></li>
+      <li class="nav-item"><a href="discussion.html"    class="nav-link"><span class="nav-icon">💬</span>Discussion</a></li>
+      <li class="nav-item"><a href="my-papers.html"     class="nav-link"><span class="nav-icon">📄</span>My Papers</a></li>
+      <li class="nav-item"><a href="lost-found.html"    class="nav-link"><span class="nav-icon">🔍</span>Lost &amp; Found</a></li>
+      <li class="nav-item"><a href="profile.html"       class="nav-link"><span class="nav-icon">👤</span>Profile</a></li>
+      <li class="nav-item"><a href="/logout"            class="nav-link"><span class="nav-icon">🚪</span>Logout</a></li>
+    </ul>
+    <div class="profile-card">
+      <h2 th:text="${studentName}">Jane Doe</h2>
+      <p>Student ID: <span th:text="${studentId}">S12345</span></p>
+      <a href="/logout" style="display:block;margin-top:10px;font-size:0.82rem;color:#6d7a98;text-decoration:none;">⬅ Logout</a>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ── STATE 1: NOT SUBMITTED ── -->
+    <div class="gate-panel" id="state-not-submitted">
+      <div class="gate-icon">📋</div>
+      <h2 class="gate-title">Fee Confirmation Required</h2>
+      <p class="gate-desc">
+        Before you can register for courses, you must confirm that you have submitted your semester fees.
+        Your coordinator will review and approve your confirmation.
+      </p>
+      <div class="fee-confirm-box">
+        <div class="fee-check-row">
+          <input type="checkbox" id="fee-checkbox" onchange="toggleSubmitBtn()" />
+          <label for="fee-checkbox">
+            I confirm that I have paid and submitted my semester fees for <strong>Spring 2026</strong>
+            at the university finance office.
+          </label>
+        </div>
+        <div class="fee-note">
+          After submitting, your coordinator will be notified and will approve your registration access.
+          This typically takes 1–2 business days.
+        </div>
+      </div>
+      <button class="btn-submit-fee" id="btn-submit-fee" disabled onclick="submitFee()">
+        Submit Fee Confirmation
+      </button>
+    </div>
+
+    <!-- ── STATE 2: SUBMITTED (pending) ── -->
+    <div class="gate-panel" id="state-submitted">
+      <div class="gate-icon">⏳</div>
+      <h2 class="gate-title">Pending Coordinator Approval</h2>
+      <p class="gate-desc">
+        Your fee confirmation has been submitted. Please wait while your coordinator reviews and approves it.
+      </p>
+      <div class="pending-banner" style="display:inline-flex;">
+        <div class="pending-dot"></div>
+        <div>
+          <strong style="font-size:0.92rem;">Awaiting Approval</strong>
+          <p style="margin:3px 0 0;font-size:0.83rem;color:var(--muted);" id="submitted-at-text"></p>
+        </div>
+      </div>
+      <p style="margin:20px 0 12px;font-size:0.88rem;color:var(--muted);font-weight:600;">Your Coordinator</p>
+      <div class="coordinator-card" id="coord-card" style="display:none;">
+        <div class="coord-avatar" id="coord-avatar"></div>
+        <div class="coord-info">
+          <div class="coord-name" id="coord-name"></div>
+          <div class="coord-role">Course Coordinator</div>
+          <div class="coord-email" id="coord-email"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STATE 3: APPROVED ── -->
+    <div id="state-approved" style="display:none; flex-direction:column; gap:24px;">
+
+      <div class="approved-banner">
+        <div class="check">✅</div>
+        <div>
+          <strong>Fee Approved — You can now register for your courses</strong>
+          <p>Your semester fee has been verified by your coordinator. Browse and enroll in your courses below.</p>
+        </div>
+      </div>
+
+      <!-- Hero -->
+      <div class="hero">
+        <div>
+          <h1>My Courses</h1>
+          <p>Browse the course catalog and build your own semester schedule.</p>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="hero-stat-val" id="stat-enrolled">0</div>
+            <div class="hero-stat-label">Enrolled</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-val" id="stat-credits">0</div>
+            <div class="hero-stat-label">Credits</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enrolled Courses -->
+      <div class="section-card">
+        <div class="section-header">
+          <h3 class="section-title">Enrolled Courses</h3>
+        </div>
+        <div id="enrolled-grid" class="enrolled-grid">
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <p>No courses enrolled yet. Add some from the catalog below.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Batch Curriculum (shown only for batch 251 / 241 students) -->
+      <div class="batch-section" id="batch-section" style="display:none;">
+        <div class="batch-header">
+          <div>
+            <div class="batch-title">Your Batch Curriculum</div>
+            <div class="batch-sub">Batch <span id="batch-label"></span> — mandatory and optional courses for your cohort</div>
+          </div>
+          <span class="batch-badge" id="batch-badge-label">Batch —</span>
+        </div>
+
+        <div class="batch-sub-head">🔒 Closed Credit — Required Courses (auto-enrolled, cannot drop)</div>
+        <div id="batch-closed-grid" class="batch-grid"></div>
+
+        <div class="batch-sub-head">✨ Extra Courses — Optional Enrichment</div>
+        <div id="batch-extra-grid" class="batch-grid"></div>
+      </div>
+
+      <!-- General Course Catalog -->
+      <div class="section-card">
+        <div class="section-header">
+          <h3 class="section-title">General Course Catalog — Spring 2026</h3>
+        </div>
+        <div class="catalog-toolbar">
+          <input class="search-input" type="text" id="search" placeholder="Search by code or name…" oninput="renderCatalog()" />
+          <div class="filter-btns">
+            <button class="filter-btn active" data-cat="All" onclick="setFilter(this)">All</button>
+            <button class="filter-btn" data-cat="Computer Science" onclick="setFilter(this)">Computer Science</button>
+            <button class="filter-btn" data-cat="Mathematics" onclick="setFilter(this)">Mathematics</button>
+            <button class="filter-btn" data-cat="General" onclick="setFilter(this)">General</button>
+          </div>
+        </div>
+        <div id="catalog-grid" class="catalog-grid"></div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- Teacher Profile Modal -->
+<div class="modal-overlay" id="teacher-modal" onclick="closeTeacherModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeTeacherModal()" type="button">✕</button>
+    <div class="modal-photo" id="modal-photo-wrap">
+      <span id="modal-photo-initials"></span>
+    </div>
+    <h2 class="modal-teacher-name" id="modal-t-name"></h2>
+    <p class="modal-desg" id="modal-t-desg"></p>
+    <div class="modal-info-grid">
+      <div class="modal-info-row">
+        <span class="modal-info-icon">🏛️</span>
+        <div>
+          <div class="modal-info-label">Department</div>
+          <div class="modal-info-val" id="modal-t-dept"></div>
+        </div>
+      </div>
+      <div class="modal-info-row">
+        <span class="modal-info-icon">✉️</span>
+        <div>
+          <div class="modal-info-label">Email</div>
+          <div class="modal-info-val" id="modal-t-email"></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:18px 0 6px;">Courses Teaching</p>
+    <div class="modal-courses-list" id="modal-t-courses"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const DAY_MAP    = { '1':'Mon','2':'Tue','3':'Wed','4':'Thu','5':'Fri' };
+  const CLR_STRIP  = { 'c-blue':'strip-blue','c-purple':'strip-purple','c-green':'strip-green','c-amber':'strip-amber','c-cyan':'strip-cyan' };
+  const CAT_CLASS  = { 'Computer Science':'cat-cs','Mathematics':'cat-math','General':'cat-general' };
+  const BATCH_GROUP = /*[[${batchGroup}]]*/ '';
+
+  let catalog      = [];
+  let enrolledList = [];
+  let teachers     = [];
+  let teacherMap   = {};
+  let batchClosed  = [];
+  let batchExtra   = [];
+  let activeFilter = 'All';
+
+  function daysLabel(days) {
+    return String(days).split(',').map(d => DAY_MAP[d.trim()] || d).join(', ');
+  }
+
+  // ── Fee gate ──────────────────────────────────────────────────────────────
+
+  async function checkFeeStatus() {
+    const res  = await fetch('/api/fee/status');
+    const data = await res.json();
+    const status = data.status || 'NOT_SUBMITTED';
+
+    document.getElementById('state-not-submitted').classList.remove('visible');
+    document.getElementById('state-submitted').classList.remove('visible');
+    document.getElementById('state-approved').style.display = 'none';
+
+    if (status === 'NOT_SUBMITTED') {
+      document.getElementById('state-not-submitted').classList.add('visible');
+
+    } else if (status === 'SUBMITTED') {
+      document.getElementById('state-submitted').classList.add('visible');
+      if (data.submittedAt) {
+        const d = new Date(data.submittedAt);
+        document.getElementById('submitted-at-text').textContent =
+          'Submitted ' + d.toLocaleDateString('en-BD', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      }
+      loadCoordinatorCard();
+
+    } else if (status === 'APPROVED') {
+      document.getElementById('state-approved').style.display = 'flex';
+      loadCourseData();
+    }
+  }
+
+  async function loadCoordinatorCard() {
+    try {
+      const res  = await fetch('/api/teachers');
+      const list = await res.json();
+      const coord = list.find(t => t.coordinator);
+      if (!coord) return;
+      const card = document.getElementById('coord-card');
+      document.getElementById('coord-name').textContent  = coord.name;
+      document.getElementById('coord-email').textContent = coord.email;
+      const initials = coord.name.split(' ').map(w => w[0]).slice(0, 2).join('');
+      const av = document.getElementById('coord-avatar');
+      if (coord.hasPhoto) {
+        av.innerHTML = '<img src="/api/teachers/' + coord.teacherId + '/photo" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />';
+      } else {
+        av.textContent = initials;
+      }
+      card.style.display = 'flex';
+    } catch (_) {}
+  }
+
+  function toggleSubmitBtn() {
+    const cb  = document.getElementById('fee-checkbox');
+    const btn = document.getElementById('btn-submit-fee');
+    btn.disabled = !cb.checked;
+  }
+
+  async function submitFee() {
+    const btn = document.getElementById('btn-submit-fee');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+    try {
+      const res = await fetch('/api/fee/submit', { method: 'POST' });
+      if (res.ok) {
+        showToast('✅ Fee confirmation submitted successfully!');
+        await checkFeeStatus();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        showToast('⚠️ ' + (d.message || 'Could not submit'));
+        btn.disabled = false;
+        btn.textContent = 'Submit Fee Confirmation';
+      }
+    } catch (_) {
+      showToast('⚠️ Network error. Please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Submit Fee Confirmation';
+    }
+  }
+
+  // ── Course data ───────────────────────────────────────────────────────────
+
+  async function loadCourseData() {
+    const [cRes, eRes, tRes, bRes] = await Promise.all([
+      fetch('/api/courses'),
+      fetch('/api/enrollments'),
+      fetch('/api/teachers'),
+      fetch('/api/courses/batch')
+    ]);
+    catalog      = await cRes.json();
+    enrolledList = await eRes.json();
+    teachers     = await tRes.json();
+    teacherMap   = {};
+    teachers.forEach(t => { teacherMap[t.teacherId] = t; });
+
+    const batchData = await bRes.json();
+    batchClosed = batchData.closed || [];
+    batchExtra  = batchData.extra  || [];
+
+    if (BATCH_GROUP && (batchClosed.length > 0 || batchExtra.length > 0)) {
+      document.getElementById('batch-section').style.display = 'block';
+      document.getElementById('batch-label').textContent        = BATCH_GROUP;
+      document.getElementById('batch-badge-label').textContent  = 'Batch ' + BATCH_GROUP;
+    }
+
+    renderAll();
+  }
+
+  function isEnrolled(code) {
+    return enrolledList.some(e => e.course.code === code);
+  }
+
+  async function enroll(code) {
+    const resp = await fetch('/api/enrollments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseCode: code })
+    });
+    const data = await resp.json();
+    if (!resp.ok) { showToast('❌ ' + (data.error || 'Could not enroll')); return; }
+    const course = catalog.find(c => c.code === code);
+    if (course) enrolledList.push({ id: data.id, course });
+    renderAll();
+    showToast('✅ Enrolled in ' + code + ' — ' + (course?.name || ''));
+  }
+
+  async function removeCourse(enrollmentId) {
+    await fetch('/api/enrollments/' + enrollmentId, { method: 'DELETE' });
+    const removed = enrolledList.find(e => e.id === enrollmentId);
+    enrolledList = enrolledList.filter(e => e.id !== enrollmentId);
+    renderAll();
+    showToast('🗑️ Dropped ' + (removed?.course?.code || 'course'));
+  }
+
+  // ── Render enrolled ───────────────────────────────────────────────────────
+
+  function renderEnrolled() {
+    const grid = document.getElementById('enrolled-grid');
+    document.getElementById('stat-enrolled').textContent = enrolledList.length;
+    document.getElementById('stat-credits').textContent  =
+      enrolledList.reduce((s, e) => s + (e.course?.credits || 0), 0);
+
+    if (enrolledList.length === 0) {
+      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No courses enrolled yet. Add some from the catalog below.</p></div>';
+      return;
+    }
+    grid.innerHTML = enrolledList.map(e => {
+      const c = e.course;
+      const isClosed = c.creditType === 'CLOSED';
+      const actionBtn = isClosed
+        ? '<span class="credit-tag tag-closed" style="padding:5px 10px;">🔒 Required</span>'
+        : '<button class="remove-btn" onclick="removeCourse(' + e.id + ')">Remove</button>';
+      return '<div class="enrolled-card ' + (CLR_STRIP[c.color] || '') + '">' +
+        '<div class="enrolled-card-top">' +
+          '<div><div class="enrolled-code">' + c.code + '</div><div class="enrolled-name">' + c.name + '</div></div>' +
+          actionBtn +
+        '</div>' +
+        '<div class="enrolled-meta">' +
+          '<span>👨‍🏫 ' + c.instructor + '</span>' +
+          '<span>📍 ' + c.room + '</span>' +
+          '<span>🕐 ' + daysLabel(c.days) + ' &nbsp;' + c.startTime + '–' + c.endTime + '</span>' +
+          '<span>📚 ' + c.credits + ' credits' + (c.creditType ? ' · <strong>' + c.creditType + '</strong>' : '') + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── Render batch curriculum ───────────────────────────────────────────────
+
+  function renderBatchGrid(courses, containerId, isClosed) {
+    const grid = document.getElementById(containerId);
+    if (!courses || courses.length === 0) {
+      grid.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:8px 0;">No courses in this section.</p>';
+      return;
+    }
+    grid.innerHTML = courses.map(c => {
+      const enrolled = isEnrolled(c.code);
+      const teacher  = c.teacherId ? teacherMap[c.teacherId] : null;
+      const tName    = teacher ? teacher.name : (c.instructor || 'TBA');
+      const tagHtml  = isClosed
+        ? '<span class="credit-tag tag-closed">CLOSED</span>'
+        : '<span class="credit-tag tag-extra">EXTRA</span>';
+      const btnHtml  = isClosed
+        ? '<button class="btn-lock" disabled>🔒 Auto-enrolled — Required</button>'
+        : (enrolled
+            ? '<button class="btn-enroll-extra enrolled" disabled>✅ Enrolled</button>'
+            : '<button class="btn-enroll-extra not-enrolled" onclick="enrollExtra(\'' + c.code + '\')">+ Enroll in this course</button>');
+
+      return '<div class="batch-card ' + (isClosed ? 'closed-card' : 'extra-card') + '">' +
+        '<div class="batch-card-top">' +
+          '<div><div class="batch-code">' + c.code + '</div><div class="batch-name">' + c.name + '</div></div>' +
+          tagHtml +
+        '</div>' +
+        '<div class="batch-meta">👨‍🏫 ' + tName + ' &nbsp;•&nbsp; 📚 ' + c.credits + ' credits</div>' +
+        '<div class="batch-meta">🕐 ' + daysLabel(c.days) + ' &nbsp;' + c.startTime + '–' + c.endTime + '</div>' +
+        btnHtml +
+      '</div>';
+    }).join('');
+  }
+
+  async function enrollExtra(code) {
+    const resp = await fetch('/api/enrollments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseCode: code })
+    });
+    const data = await resp.json();
+    if (!resp.ok) { showToast('❌ ' + (data.error || 'Could not enroll')); return; }
+    const course = batchExtra.find(c => c.code === code) || catalog.find(c => c.code === code);
+    if (course) enrolledList.push({ id: data.id, course });
+    renderAll();
+    showToast('✅ Enrolled in ' + code + ' — ' + (course?.name || ''));
+  }
+
+  // ── Render catalog ────────────────────────────────────────────────────────
+
+  function renderCatalog() {
+    const q = document.getElementById('search').value.toLowerCase();
+    // General catalog: exclude batch-specific courses (they have a batchGroup set)
+    const generalOnly = catalog.filter(c => !c.batchGroup);
+    const filtered = generalOnly.filter(c => {
+      const matchCat    = activeFilter === 'All' || c.category === activeFilter;
+      const matchSearch = !q || c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+      return matchCat && matchSearch;
+    });
+
+    document.getElementById('catalog-grid').innerHTML = filtered.map(c => {
+      const alreadyIn = isEnrolled(c.code);
+      const teacher   = c.teacherId ? teacherMap[c.teacherId] : null;
+      const initials  = teacher ? teacher.name.split(' ').map(w => w[0]).slice(0, 2).join('') : '?';
+
+      const teacherRowHtml = teacher ? (
+        '<div class="teacher-row">' +
+          '<div class="teacher-avatar-sm">' +
+            (teacher.hasPhoto
+              ? '<img src="/api/teachers/' + teacher.teacherId + '/photo" alt="" />'
+              : initials) +
+          '</div>' +
+          '<div style="flex:1;">' +
+            '<div class="teacher-row-name">' + teacher.name + '</div>' +
+            '<div class="teacher-row-desg">' + teacher.designation + '</div>' +
+          '</div>' +
+          '<button class="btn-view-profile" type="button" onclick="openTeacherModal(\'' + teacher.teacherId + '\')">View Profile</button>' +
+        '</div>'
+      ) : '<div class="teacher-row"><div style="color:var(--muted);font-size:0.83rem;">👨‍🏫 ' + (c.instructor || 'TBA') + '</div></div>';
+
+      return '<div class="course-card">' +
+        '<div class="course-card-top">' +
+          '<span class="course-code-badge">' + c.code + '</span>' +
+          '<span class="cat-badge ' + (CAT_CLASS[c.category] || '') + '">' + c.category + '</span>' +
+        '</div>' +
+        '<p class="course-name">' + c.name + '</p>' +
+        '<div class="course-details">' +
+          '<span>📍 ' + c.room + '</span>' +
+          '<span>🕐 ' + daysLabel(c.days) + ' &nbsp;' + c.startTime + '–' + c.endTime + '</span>' +
+        '</div>' +
+        '<span class="credits-badge">' + c.credits + ' Credits</span>' +
+        teacherRowHtml +
+        '<button class="enroll-btn ' + (alreadyIn ? 'enrolled' : 'not-enrolled') + '"' +
+          (alreadyIn ? ' disabled' : ' onclick="enroll(\'' + c.code + '\')"') + '>' +
+          (alreadyIn ? '✅ Enrolled' : '+ Enroll') +
+        '</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function setFilter(btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.cat;
+    renderCatalog();
+  }
+
+  function renderAll() {
+    renderEnrolled();
+    renderBatchGrid(batchClosed, 'batch-closed-grid', true);
+    renderBatchGrid(batchExtra,  'batch-extra-grid',  false);
+    renderCatalog();
+  }
+
+  // ── Teacher Profile Modal ─────────────────────────────────────────────────
+
+  function openTeacherModal(teacherId) {
+    const t = teacherMap[teacherId];
+    if (!t) return;
+
+    const initials = t.name.split(' ').map(w => w[0]).slice(0, 2).join('');
+    const photoWrap = document.getElementById('modal-photo-wrap');
+    const photoInitials = document.getElementById('modal-photo-initials');
+
+    if (t.hasPhoto) {
+      photoInitials.textContent = '';
+      photoWrap.style.background = '';
+      photoWrap.innerHTML = '<img src="/api/teachers/' + t.teacherId + '/photo" alt="' + t.name + '" style="width:100%;height:100%;object-fit:cover;" />';
+    } else {
+      photoWrap.innerHTML = '<span id="modal-photo-initials">' + initials + '</span>';
+      photoWrap.style.background = 'linear-gradient(135deg, #6d28d9, #3f61ff)';
+    }
+
+    document.getElementById('modal-t-name').textContent  = t.name;
+    document.getElementById('modal-t-desg').textContent  = t.designation;
+    document.getElementById('modal-t-dept').textContent  = t.department;
+    document.getElementById('modal-t-email').textContent = t.email;
+
+    const coursesTaught = catalog.filter(c => c.teacherId === t.teacherId);
+    document.getElementById('modal-t-courses').innerHTML = coursesTaught.length
+      ? coursesTaught.map(c => '<span class="modal-course-chip">' + c.code + ' — ' + c.name + '</span>').join('')
+      : '<span style="color:var(--muted);font-size:0.83rem;">No courses assigned</span>';
+
+    document.getElementById('teacher-modal').classList.add('open');
+  }
+
+  function closeTeacherModal(e) {
+    if (e && e.target !== document.getElementById('teacher-modal') && e.type === 'click') return;
+    document.getElementById('teacher-modal').classList.remove('open');
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────────
+  checkFeeStatus();
+</script>
+
+<div th:replace="~{chatbot-fragment :: chatbot}"></div>
+</body>
+</html>

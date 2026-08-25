@@ -1,0 +1,839 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{var _t=localStorage.getItem('eduadvisor-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resources — Student Advice</title>
+  <style>
+    :root {
+      --bg: #eef3ff;
+      --panel: #ffffff;
+      --accent: #3f61ff;
+      --text: #1f2b44;
+      --muted: #6d7a98;
+      --border: rgba(63, 97, 255, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #dbe4ff 0%, #eef3ff 55%, #f9fbff 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 28px 20px;
+      box-shadow: 0 24px 60px rgba(47, 67, 120, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      align-self: start;
+      position: sticky;
+      top: 24px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); }
+    .brand-title { font-size: 1.05rem; font-weight: 700; }
+
+    .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .nav-item { border-radius: 18px; overflow: hidden; }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 600;
+      background: #f9fbff;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: rgba(63, 97, 255, 0.12);
+      transform: translateX(2px);
+    }
+    .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; color: var(--accent); }
+
+    .profile-card {
+      padding: 18px;
+      border-radius: 22px;
+      background: #f8faff;
+      border: 1px solid rgba(63, 97, 255, 0.08);
+    }
+    .profile-card h2 { margin: 0 0 6px; font-size: 1.1rem; }
+    .profile-card p  { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+    /* ── Main ── */
+    .main { display: flex; flex-direction: column; gap: 24px; }
+
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 36px;
+      box-shadow: 0 24px 60px rgba(47, 67, 120, 0.06);
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 2.1rem; }
+    .hero p  { margin: 0; color: var(--muted); line-height: 1.7; font-size: 1rem; }
+
+    /* ── Back button ── */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(63, 97, 255, 0.1);
+      border: none;
+      border-radius: 12px;
+      padding: 9px 18px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.18s;
+      margin-bottom: 16px;
+    }
+    .back-btn:hover { background: rgba(63, 97, 255, 0.2); }
+
+    /* ── Department grid ── */
+    .dept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .dept-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      padding: 34px 24px;
+      box-shadow: 0 12px 30px rgba(34, 60, 80, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      text-align: center;
+    }
+    .dept-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 48px rgba(63, 97, 255, 0.14);
+      background: rgba(63, 97, 255, 0.03);
+    }
+    .dept-icon {
+      font-size: 2.6rem;
+      width: 70px; height: 70px;
+      border-radius: 20px;
+      background: rgba(63, 97, 255, 0.1);
+      display: grid;
+      place-items: center;
+    }
+    .dept-card h4 { margin: 0; font-size: 1rem; font-weight: 700; line-height: 1.4; }
+    .dept-card .dept-count { font-size: 0.82rem; color: var(--muted); }
+
+    /* ── Resources view ── */
+    #resources-view { display: none; flex-direction: column; gap: 24px; }
+    #resources-view.visible { display: flex; }
+
+    .resource-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .resource-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 12px 30px rgba(34, 60, 80, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .resource-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .resource-card-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      background: rgba(63, 97, 255, 0.1);
+      display: grid;
+      place-items: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .resource-card-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .resource-card-header p {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    /* PDF items */
+    .pdf-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .pdf-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .pdf-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+    .pdf-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 2px; }
+    .pdf-desc  { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+    /* Website items */
+    .site-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.15s;
+      border-radius: 8px;
+    }
+    .site-item:last-child { border-bottom: none; }
+    .site-item:hover .site-name { color: var(--accent); text-decoration: underline; }
+    .site-favicon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: rgba(63, 97, 255, 0.08);
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .site-name { font-size: 0.9rem; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+    .site-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+
+    /* Book items */
+    .book-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .book-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .book-spine {
+      width: 6px;
+      align-self: stretch;
+      border-radius: 3px;
+      background: var(--accent);
+      opacity: 0.4;
+      flex-shrink: 0;
+    }
+    .book-title  { font-size: 0.9rem; font-weight: 700; margin-bottom: 2px; }
+    .book-title a { color: var(--text); text-decoration: none; }
+    .book-title a:hover { color: var(--accent); text-decoration: underline; }
+    .book-author { font-size: 0.8rem; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
+    .book-desc   { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+    .pdf-title a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .pdf-title a:hover { text-decoration: underline; }
+
+    /* YouTube items */
+    .yt-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none;
+      color: inherit;
+    }
+    .yt-item:last-child { border-bottom: none; }
+    .yt-item:hover .yt-name { color: #e53e3e; text-decoration: underline; }
+    .yt-thumb {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(229, 62, 62, 0.1);
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .yt-name { font-size: 0.9rem; font-weight: 700; color: #e53e3e; margin-bottom: 2px; }
+    .yt-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+
+    @media (max-width: 1000px) { .resource-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; padding: 16px; }
+      .sidebar { position: static; }
+    }
+    @media (max-width: 600px) {
+      .dept-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Student Advice</div>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span>Home</a></li>
+        <li class="nav-item"><a href="advice.html" class="nav-link"><span class="nav-icon">🎯</span>Advice</a></li>
+        <li class="nav-item"><a href="schedule.html" class="nav-link"><span class="nav-icon">📅</span>Schedule</a></li>
+        <li class="nav-item"><a href="resources.html" class="nav-link active"><span class="nav-icon">📚</span>Resources</a></li>
+        <li class="nav-item"><a href="counselling.html" class="nav-link"><span class="nav-icon">🗓️</span>Counselling Hours</a></li>
+        <li class="nav-item"><a href="CreaditTransfer.html" class="nav-link"><span class="nav-icon">🔄</span>Credit Transfer</a></li>
+        <li class="nav-item"><a href="my-courses.html" class="nav-link"><span class="nav-icon">📋</span>My Courses</a></li>
+        <li class="nav-item"><a href="grade-calculator.html" class="nav-link"><span class="nav-icon">🎓</span>Grade Calculator</a></li>
+        <li class="nav-item"><a href="learning-gap.html" class="nav-link"><span class="nav-icon">🧠</span>Learning Gaps</a></li>
+        <li class="nav-item"><a href="https://diuqbank.com/#google_vignette" class="nav-link" target="_blank" rel="noopener noreferrer"><span class="nav-icon">📝</span>Q-Bank</a></li>
+        <li class="nav-item"><a href="discussion.html"     class="nav-link"><span class="nav-icon">💬</span>Discussion</a></li>
+        <li class="nav-item"><a href="my-papers.html"    class="nav-link"><span class="nav-icon">📄</span>My Papers</a></li>
+        <li class="nav-item"><a href="lost-found.html"   class="nav-link"><span class="nav-icon">🔍</span>Lost &amp; Found</a></li>
+        <li class="nav-item"><a href="profile.html"        class="nav-link"><span class="nav-icon">👤</span>Profile</a></li>
+        <li class="nav-item"><a href="/logout"             class="nav-link"><span class="nav-icon">🚪</span>Logout</a></li>
+      </ul>
+      <div class="profile-card">
+        <h2>Jane Doe</h2>
+        <p>Student ID: S12345</p>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- VIEW 1: Department picker -->
+      <div id="dept-view">
+        <section class="hero">
+          <h1>Resources</h1>
+          <p>Select your department to browse curated PDFs, reference websites, essential books, and YouTube channels.</p>
+        </section>
+        <div class="dept-grid">
+          <div class="dept-card" data-dept="Mathematics">
+            <div class="dept-icon">➗</div>
+            <h4>Mathematics</h4>
+            <span class="dept-count">4 categories · 30+ resources</span>
+          </div>
+          <div class="dept-card" data-dept="Computer Science">
+            <div class="dept-icon">💻</div>
+            <h4>Computer Information &amp; Systems</h4>
+            <span class="dept-count">4 categories · 30+ resources</span>
+          </div>
+          <div class="dept-card" data-dept="Physics">
+            <div class="dept-icon">⚛️</div>
+            <h4>Applied Physics</h4>
+            <span class="dept-count">4 categories · 30+ resources</span>
+          </div>
+          <div class="dept-card" data-dept="English">
+            <div class="dept-icon">📖</div>
+            <h4>English Literature</h4>
+            <span class="dept-count">4 categories · 30+ resources</span>
+          </div>
+          <div class="dept-card" data-dept="Biochemistry">
+            <div class="dept-icon">🧪</div>
+            <h4>Genetics &amp; Biochemistry</h4>
+            <span class="dept-count">4 categories · 30+ resources</span>
+          </div>
+          <div class="dept-card" data-dept="Law">
+            <div class="dept-icon">🏛️</div>
+            <h4>Law</h4>
+            <span class="dept-count">4 categories · 30+ resources</span>
+          </div>
+          <div class="dept-card" data-dept="Pharmacy">
+            <div class="dept-icon">💊</div>
+            <h4>Pharmacy</h4>
+            <span class="dept-count">4 categories · 30+ resources</span>
+          </div>
+          <div class="dept-card" data-dept="Economics">
+            <div class="dept-icon">📊</div>
+            <h4>Economics</h4>
+            <span class="dept-count">4 categories · 30+ resources</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: Resources for selected department -->
+      <div id="resources-view">
+        <section class="hero" style="padding:28px 36px;">
+          <button class="back-btn" id="backToDepts">&#8592; Departments</button>
+          <h1 id="dept-title"></h1>
+          <p id="dept-subtitle"></p>
+        </section>
+        <div class="resource-grid" id="resource-grid"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    const resources = {
+
+      'Mathematics': {
+        label: 'Mathematics',
+        subtitle: 'Calculus, linear algebra, statistics, number theory, and discrete mathematics.',
+        pdfs: [
+          { title: "Paul's Online Math Notes", url: "https://tutorial.math.lamar.edu", desc: "Complete Calculus I, II & III notes plus algebra and differential equations — free, printable, and exam-ready." },
+          { title: "MIT 18.06 — Linear Algebra", url: "https://ocw.mit.edu/search/?q=linear+algebra+18.06", desc: "Professor Gilbert Strang's full lecture notes and problem sets from MIT OpenCourseWare." },
+          { title: "Khan Academy Worksheets", url: "https://www.khanacademy.org/math", desc: "Printable exercises covering algebra, geometry, trigonometry, and calculus with answer keys." },
+          { title: "Discrete Math Formula Sheet", url: "https://ocw.mit.edu/search/?q=mathematics+for+computer+science+discrete", desc: "Condensed reference: logic, sets, combinatorics, graph theory, and proof techniques." },
+          { title: "Probability Cheat Sheet", url: "https://www.khanacademy.org/math/statistics-probability", desc: "Key distributions, theorems (Bayes, CLT), and formulae for statistics and probability." },
+          { title: "OpenStax Free Math Textbooks", url: "https://openstax.org/subjects/math", desc: "Peer-reviewed, openly licensed calculus, statistics, and algebra textbooks — download PDF for free." },
+          { title: "arXiv Mathematics Preprints", url: "https://arxiv.org/list/math/recent", desc: "Open-access repository of the latest mathematics research papers across all subfields (arxiv.org)." },
+          { title: "MIT 18.01 — Single Variable Calculus", url: "https://ocw.mit.edu/search/?q=18.01+single+variable+calculus", desc: "Full OCW notes, exams, and solutions for MIT's single-variable calculus course." },
+        ],
+        websites: [
+          { name: "Paul's Online Math Notes", url: "https://tutorial.math.lamar.edu", icon: "📐", desc: "Free, thorough notes and cheat sheets for university-level calculus and algebra." },
+          { name: "Wolfram Alpha", url: "https://www.wolframalpha.com", icon: "🔢", desc: "Computational engine — solve equations, plot functions, get step-by-step solutions." },
+          { name: "Desmos Graphing Calculator", url: "https://www.desmos.com", icon: "📈", desc: "Interactive online graphing for functions, inequalities, and parametric curves." },
+          { name: "Khan Academy — Math", url: "https://www.khanacademy.org/math", icon: "🎓", desc: "Free lessons from arithmetic through multivariable calculus with practice problems." },
+          { name: "Mathematics Stack Exchange", url: "https://math.stackexchange.com", icon: "💬", desc: "Community Q&A for university-level mathematics problems and proofs." },
+          { name: "NRICH Mathematics", url: "https://nrich.maths.org", icon: "🧩", desc: "Enrichment problems, investigations, and articles from Cambridge University." },
+          { name: "OpenStax — Math", url: "https://openstax.org/subjects/math", icon: "📗", desc: "Free, peer-reviewed open textbooks for calculus, statistics, precalculus, and more." },
+          { name: "arXiv Mathematics", url: "https://arxiv.org/list/math/recent", icon: "🔬", desc: "Open-access preprint server for cutting-edge mathematics research — free to read and download." },
+          { name: "Art of Problem Solving", url: "https://artofproblemsolving.com", icon: "🏆", desc: "Competition math resources, forums, and textbooks — excellent for deepening mathematical problem-solving." },
+        ],
+        books: [
+          { title: "Calculus: Early Transcendentals", url: "https://openlibrary.org/search?q=Calculus+Early+Transcendentals+James+Stewart", author: "James Stewart", desc: "The most widely used calculus textbook worldwide — clear explanations with strong problem sets." },
+          { title: "Linear Algebra and Its Applications", url: "https://openlibrary.org/search?q=Linear+Algebra+Applications+Gilbert+Strang", author: "Gilbert Strang", desc: "Intuition-first approach to vectors, matrices, and transformations; companion to MIT 18.06." },
+          { title: "Discrete Mathematics and Its Applications", url: "https://openlibrary.org/search?q=Discrete+Mathematics+Applications+Kenneth+Rosen", author: "Kenneth H. Rosen", desc: "Standard text for logic, proofs, combinatorics, and graph theory courses." },
+          { title: "How to Prove It", url: "https://openlibrary.org/search?q=How+to+Prove+It+Daniel+Velleman", author: "Daniel J. Velleman", desc: "Teaches mathematical proof techniques clearly — ideal for the transition to abstract mathematics." },
+          { title: "Principles of Mathematical Analysis", url: "https://openlibrary.org/search?q=Principles+Mathematical+Analysis+Walter+Rudin", author: "Walter Rudin", desc: "Rigorous real analysis — the classic choice for advanced undergraduates." },
+          { title: "Abstract Algebra", url: "https://openlibrary.org/search?q=Abstract+Algebra+Dummit+Foote", author: "David S. Dummit & Richard M. Foote", desc: "The most comprehensive undergraduate abstract algebra text — groups, rings, fields, and Galois theory." },
+          { title: "Introduction to Real Analysis", url: "https://openlibrary.org/search?q=Introduction+Real+Analysis+Bartle+Sherbert", author: "Robert G. Bartle & Donald R. Sherbert", desc: "Accessible, rigorous real analysis — sequences, limits, continuity, and integration." },
+          { title: "Mathematical Statistics with Applications", url: "https://openlibrary.org/search?q=Mathematical+Statistics+Applications+Wackerly+Mendenhall", author: "Wackerly, Mendenhall & Scheaffer", desc: "Bridges probability theory and applied statistical inference — widely used in statistics courses." },
+        ],
+        youtube: [
+          { name: "3Blue1Brown", url: "https://www.youtube.com/@3blue1brown", desc: "Visually stunning 'Essence of Calculus' and 'Essence of Linear Algebra' series. Must-watch." },
+          { name: "Professor Leonard", url: "https://www.youtube.com/@professorleonard", desc: "Full university calculus I, II & III lectures — extremely thorough and student-friendly." },
+          { name: "Khan Academy", url: "https://www.youtube.com/@khanacademy", desc: "Concise videos on every math topic from pre-algebra through differential equations." },
+          { name: "PatrickJMT", url: "https://www.youtube.com/@patrickjmt", desc: "Hundreds of worked examples covering calculus, algebra, and statistics step by step." },
+          { name: "blackpenredpen", url: "https://www.youtube.com/@blackpenredpen", desc: "Entertaining deep-dives into integrals, series, differential equations, and competition math." },
+        ],
+      },
+
+      'Computer Science': {
+        label: 'Computer Information & Systems',
+        subtitle: 'Algorithms, software engineering, databases, AI, networks, and web technologies.',
+        pdfs: [
+          { title: "CS50 Lecture Notes", url: "https://cs50.harvard.edu", desc: "Harvard's Introduction to Computer Science — weekly notes, slides, and problem set specs (cs50.harvard.edu)." },
+          { title: "MIT 6.006 — Algorithms", url: "https://ocw.mit.edu/search/?q=6.006+introduction+to+algorithms", desc: "Lecture notes, recitation materials, and problem sets on sorting, graphs, and dynamic programming." },
+          { title: "The Missing Semester of Your CS Education", url: "https://missing.csail.mit.edu", desc: "MIT notes on shell, Git, text editors, debugging, and dev tools every CS student needs." },
+          { title: "Clean Code Summary Sheet", url: "https://openlibrary.org/search?q=Clean+Code+Robert+Martin", desc: "Key principles from Robert C. Martin: naming, functions, comments, and SOLID design." },
+          { title: "Big-O Complexity Cheat Sheet", url: "https://www.bigocheatsheet.com", desc: "Time and space complexities for common data structures and sorting algorithms at a glance." },
+          { title: "arXiv CS Preprints", url: "https://arxiv.org/list/cs/recent", desc: "Open-access repository for the latest research in AI, ML, systems, and theoretical CS (arxiv.org)." },
+          { title: "Stanford CS229 — Machine Learning Notes", url: "https://cs229.stanford.edu/main_notes.pdf", desc: "Andrew Ng's full lecture notes on supervised learning, SVMs, neural networks, and unsupervised learning." },
+          { title: "Dive into Deep Learning (d2l.ai)", url: "https://d2l.ai", desc: "Interactive, open-source deep learning textbook used at 500+ universities — code examples in PyTorch." },
+        ],
+        websites: [
+          { name: "GeeksforGeeks", url: "https://www.geeksforgeeks.org", icon: "💡", desc: "Tutorials, interview questions, and coding problems covering DSA, OS, DBMS, and more." },
+          { name: "MDN Web Docs", url: "https://developer.mozilla.org", icon: "🌐", desc: "The definitive reference for HTML, CSS, and JavaScript — maintained by Mozilla." },
+          { name: "CS50 by Harvard", url: "https://cs50.harvard.edu", icon: "🎓", desc: "Free, world-class introduction to computer science — problem sets and full lectures." },
+          { name: "LeetCode", url: "https://leetcode.com", icon: "🧠", desc: "DSA problem bank for coding interviews — filter by topic, difficulty, and company." },
+          { name: "Stack Overflow", url: "https://stackoverflow.com", icon: "💬", desc: "Q&A community for programming questions across every language and framework." },
+          { name: "GitHub", url: "https://github.com", icon: "🐙", desc: "Host, version-control, and collaborate on code; explore open-source projects." },
+          { name: "arXiv CS", url: "https://arxiv.org/list/cs/recent", icon: "🔬", desc: "Free preprints for AI, machine learning, systems, and theory research — read before publication." },
+          { name: "Papers With Code", url: "https://paperswithcode.com", icon: "📄", desc: "Links ML research papers to their open-source code and benchmark results — track state-of-the-art." },
+          { name: "roadmap.sh", url: "https://roadmap.sh", icon: "🗺️", desc: "Community-driven learning roadmaps for frontend, backend, DevOps, AI, and more career paths." },
+        ],
+        books: [
+          { title: "Introduction to Algorithms (CLRS)", url: "https://openlibrary.org/search?q=Introduction+to+Algorithms+Cormen+Leiserson", author: "Cormen, Leiserson, Rivest & Stein", desc: "The definitive algorithms textbook — rigorous coverage of sorting, graphs, and complexity." },
+          { title: "Clean Code", url: "https://openlibrary.org/search?q=Clean+Code+Robert+Martin", author: "Robert C. Martin", desc: "Practical guide to writing readable, maintainable code with real refactoring examples." },
+          { title: "The Pragmatic Programmer", url: "https://openlibrary.org/search?q=Pragmatic+Programmer+Hunt+Thomas", author: "Andrew Hunt & David Thomas", desc: "Career and craft advice for software developers — timeless principles from two industry veterans." },
+          { title: "Computer Networks", url: "https://openlibrary.org/search?q=Computer+Networks+Tanenbaum", author: "Andrew S. Tanenbaum", desc: "Comprehensive bottom-up coverage of networking from physical layer to application protocols." },
+          { title: "Structure & Interpretation of Computer Programs", url: "https://openlibrary.org/search?q=Structure+Interpretation+Computer+Programs+Abelson", author: "Harold Abelson & Gerald Sussman", desc: "MIT's legendary CS Bible — teaches programming through abstraction, recursion, and interpreters." },
+          { title: "Designing Data-Intensive Applications", url: "https://openlibrary.org/search?q=Designing+Data+Intensive+Applications+Kleppmann", author: "Martin Kleppmann", desc: "Deep dive into databases, distributed systems, and data engineering — essential for backend developers." },
+          { title: "The Algorithm Design Manual", url: "https://openlibrary.org/search?q=Algorithm+Design+Manual+Skiena", author: "Steven S. Skiena", desc: "Practical algorithms guide with a catalogue of problem types — excellent companion to CLRS." },
+          { title: "Head First Design Patterns", url: "https://openlibrary.org/search?q=Head+First+Design+Patterns+Freeman", author: "Eric Freeman & Elisabeth Robson", desc: "Brain-friendly introduction to GoF design patterns using Java — visual and highly readable." },
+        ],
+        youtube: [
+          { name: "CS50", url: "https://www.youtube.com/@cs50", desc: "Harvard's full CS50 course updated yearly — the best free introduction to computer science." },
+          { name: "Fireship", url: "https://www.youtube.com/@Fireship", desc: "Fast-paced, witty explainers on languages, frameworks, and tech trends — '100 seconds' series." },
+          { name: "Traversy Media", url: "https://www.youtube.com/@TraversyMedia", desc: "In-depth web development tutorials on HTML, CSS, JS, React, Node, and more." },
+          { name: "MIT OpenCourseWare", url: "https://www.youtube.com/@mitocw", desc: "Full lecture recordings for MIT's algorithms, systems, AI, and mathematics courses." },
+          { name: "Neetcode", url: "https://www.youtube.com/@NeetCode", desc: "Clear video solutions and explanations for LeetCode problems, organized by pattern." },
+        ],
+      },
+
+      'Physics': {
+        label: 'Applied Physics',
+        subtitle: 'Classical mechanics, electromagnetism, thermodynamics, optics, and quantum physics.',
+        pdfs: [
+          { title: "The Feynman Lectures on Physics", url: "https://www.feynmanlectures.caltech.edu", desc: "All three volumes available free online at feynmanlectures.caltech.edu — essential reading." },
+          { title: "MIT 8.01 — Classical Mechanics Notes", url: "https://ocw.mit.edu/search/?q=8.01+classical+mechanics", desc: "Lecture notes, problem sets, and exam solutions from MIT's introductory physics sequence." },
+          { title: "HyperPhysics Concept Maps", url: "http://hyperphysics.phy-astr.gsu.edu/hbase/hframe.html", desc: "Condensed formula sheets and concept diagrams for every major physics topic." },
+          { title: "NIST Physical Constants Reference", url: "https://physics.nist.gov/cuu/Constants/", desc: "Official values for fundamental constants (c, h, e, G, etc.) from the National Institute of Standards." },
+          { title: "PhET Simulation Guides", url: "https://phet.colorado.edu/en/simulations", desc: "Lab worksheets designed around the free PhET interactive physics simulations from U. of Colorado." },
+          { title: "OpenStax University Physics (Free PDF)", url: "https://openstax.org/subjects/science", desc: "Open-licensed, peer-reviewed university physics textbooks covering mechanics, waves, E&M, and modern physics." },
+          { title: "arXiv Physics Preprints", url: "https://arxiv.org/list/physics/recent", desc: "Open-access preprints across all physics subfields — read frontier research before journal publication." },
+          { title: "The Physics Hypertextbook", url: "https://physics.info", desc: "Comprehensive online physics reference with equations, problems, and worked examples for every topic." },
+        ],
+        websites: [
+          { name: "HyperPhysics", url: "http://hyperphysics.phy-astr.gsu.edu", icon: "⚛️", desc: "Interconnected concept maps covering every physics topic with formulae and diagrams." },
+          { name: "The Physics Classroom", url: "https://www.physicsclassroom.com", icon: "📐", desc: "Lessons, tutorials, and practice problems for introductory and university-level physics." },
+          { name: "PhET Simulations", url: "https://phet.colorado.edu", icon: "🔬", desc: "Free, interactive physics simulations from the University of Colorado Boulder." },
+          { name: "Feynman Lectures Online", url: "https://www.feynmanlectures.caltech.edu", icon: "📖", desc: "All three volumes of Feynman's legendary lectures — freely available from Caltech." },
+          { name: "NIST", url: "https://www.nist.gov", icon: "🏛️", desc: "Physical constants, measurement standards, and scientific data from the US national lab." },
+          { name: "OpenStax Physics", url: "https://openstax.org/subjects/science", icon: "📗", desc: "Free, peer-reviewed open physics textbooks — download PDF or read online at no cost." },
+          { name: "arXiv Physics", url: "https://arxiv.org/list/physics/recent", icon: "🔭", desc: "Open-access repository for physics research preprints — astrophysics, condensed matter, quantum, and more." },
+          { name: "American Physical Society", url: "https://www.aps.org", icon: "🏆", desc: "Physics journals, news, career resources, and open-access content from the world's leading physics society." },
+        ],
+        books: [
+          { title: "University Physics", url: "https://openlibrary.org/search?q=University+Physics+Young+Freedman", author: "Hugh D. Young & Roger A. Freedman", desc: "Most widely used introductory physics text — clear derivations, strong problem sets." },
+          { title: "The Feynman Lectures on Physics", url: "https://www.feynmanlectures.caltech.edu", author: "Richard P. Feynman", desc: "Timeless three-volume set — free online at feynmanlectures.caltech.edu from Caltech." },
+          { title: "Introduction to Electrodynamics", url: "https://openlibrary.org/search?q=Introduction+Electrodynamics+Griffiths", author: "David J. Griffiths", desc: "The standard undergraduate electrodynamics text — elegant style with excellent problems." },
+          { title: "Quantum Mechanics", url: "https://openlibrary.org/search?q=Quantum+Mechanics+Griffiths+Introduction", author: "David J. Griffiths", desc: "Accessible introduction to quantum theory from the same author — widely used in third-year courses." },
+          { title: "Classical Mechanics", url: "https://openlibrary.org/search?q=Classical+Mechanics+Goldstein", author: "Herbert Goldstein", desc: "Advanced treatment using Lagrangian and Hamiltonian formulations — the graduate standard." },
+          { title: "Concepts of Modern Physics", url: "https://openlibrary.org/search?q=Concepts+Modern+Physics+Arthur+Beiser", author: "Arthur Beiser", desc: "Accessible introduction to special relativity, quantum theory, atomic physics, and nuclear physics." },
+          { title: "Thermal Physics", url: "https://openlibrary.org/search?q=Thermal+Physics+Kittel+Kroemer", author: "Charles Kittel & Herbert Kroemer", desc: "Rigorous statistical mechanics and thermodynamics — the standard for advanced undergraduates." },
+          { title: "Modern Quantum Mechanics", url: "https://openlibrary.org/search?q=Modern+Quantum+Mechanics+Sakurai+Napolitano", author: "J. J. Sakurai & Jim Napolitano", desc: "Elegant, comprehensive quantum mechanics at the graduate level — bra-ket notation from the start." },
+        ],
+        youtube: [
+          { name: "Walter Lewin Lectures", url: "https://www.youtube.com/@lecturesbywalterlewin8154", desc: "Legendary MIT physics lectures — famous for dramatic demonstrations and intuitive teaching." },
+          { name: "Khan Academy Physics", url: "https://www.youtube.com/@khanacademy", desc: "Mechanics, waves, thermodynamics, and electricity & magnetism from basics to exam level." },
+          { name: "Michel van Biezen", url: "https://www.youtube.com/@MichelvanBiezen", desc: "Thousands of solved physics problems across every topic — outstanding for exam preparation." },
+          { name: "Veritasium", url: "https://www.youtube.com/@veritasium", desc: "High-production physics and science videos that build deep conceptual understanding." },
+          { name: "Looking Glass Universe", url: "https://www.youtube.com/@LookingGlassUniverse", desc: "Quantum mechanics explained intuitively — bridging pop-science and actual physics." },
+        ],
+      },
+
+      'English': {
+        label: 'English Literature',
+        subtitle: 'British and world literature, poetry, creative writing, literary criticism, and academic writing.',
+        pdfs: [
+          { title: "Project Gutenberg Full-Text Library", url: "https://www.gutenberg.org", desc: "Over 70,000 free e-books — every public-domain classic from Shakespeare to Dickens (gutenberg.org)." },
+          { title: "Purdue OWL Writing Guide", url: "https://owl.purdue.edu/owl/purdue_owl.html", desc: "Comprehensive academic writing guidance including MLA, APA, and Chicago citation formats." },
+          { title: "SparkNotes Study Guides", url: "https://www.sparknotes.com", desc: "Plot summaries, character analysis, and themes for hundreds of canonical texts." },
+          { title: "Poetry Foundation Archive", url: "https://www.poetryfoundation.org/poems", desc: "Full texts of thousands of poems plus essays on poetic form and literary movements." },
+          { title: "Literary Devices Reference Sheet", url: "https://literarydevices.net", desc: "Quick-reference guide to metaphor, alliteration, irony, foreshadowing, and 50+ more devices." },
+          { title: "Internet Archive — Literary Texts", url: "https://archive.org/details/texts", desc: "Millions of free digitised books, manuscripts, and historical texts — the world's largest free library." },
+          { title: "JSTOR Open Access Articles", url: "https://www.jstor.org/open", desc: "Peer-reviewed journal articles in literary criticism and humanities — many freely available." },
+          { title: "Stanford Encyclopedia of Philosophy", url: "https://plato.stanford.edu", desc: "Authoritative, free reference for philosophy, literary theory, and critical thought — essential for essays." },
+        ],
+        websites: [
+          { name: "Project Gutenberg", url: "https://www.gutenberg.org", icon: "📜", desc: "Free full texts of 70,000+ public-domain literary works — the internet's oldest digital library." },
+          { name: "Purdue OWL", url: "https://owl.purdue.edu", icon: "✍️", desc: "Gold-standard online writing lab — grammar, style, and citation guides trusted by universities worldwide." },
+          { name: "SparkNotes", url: "https://www.sparknotes.com", icon: "📖", desc: "Study guides, summaries, and analysis for novels, plays, and poems on the curriculum." },
+          { name: "JSTOR", url: "https://www.jstor.org", icon: "🔬", desc: "Academic journal articles and essays in literary studies, history, and humanities." },
+          { name: "Poetry Foundation", url: "https://www.poetryfoundation.org", icon: "🌿", desc: "Thousands of poems with audio readings, poet biographies, and thematic collections." },
+          { name: "British Library", url: "https://www.bl.uk", icon: "🏛️", desc: "Digitised manuscripts, rare books, and research guides from one of the world's great libraries." },
+          { name: "Internet Archive", url: "https://archive.org", icon: "🗄️", desc: "Free access to millions of books, films, and web archives — invaluable for primary source research." },
+          { name: "Open Library", url: "https://openlibrary.org", icon: "📚", desc: "Borrow digital scans of out-of-print books for free — extensive collection of literary works." },
+          { name: "Digital Public Library of America", url: "https://dp.la", icon: "🇺🇸", desc: "Millions of digitised items from US libraries, archives, and museums — great for literary research." },
+        ],
+        books: [
+          { title: "The Norton Anthology of English Literature", url: "https://openlibrary.org/search?q=Norton+Anthology+English+Literature+Greenblatt", author: "Stephen Greenblatt (ed.)", desc: "The definitive anthology spanning Beowulf to the present — the essential course companion." },
+          { title: "How to Read Literature Like a Professor", url: "https://openlibrary.org/search?q=How+to+Read+Literature+Like+Professor+Foster", author: "Thomas C. Foster", desc: "Decodes symbols, allusions, and patterns that recur across literature — ideal for literary analysis." },
+          { title: "Seven Types of Ambiguity", url: "https://openlibrary.org/search?q=Seven+Types+Ambiguity+William+Empson", author: "William Empson", desc: "Foundational text of close reading — demonstrates how poetry layers multiple meanings simultaneously." },
+          { title: "Aspects of the Novel", url: "https://openlibrary.org/search?q=Aspects+of+the+Novel+Forster", author: "E. M. Forster", desc: "Accessible and witty exploration of plot, character, pattern, and rhythm in fiction." },
+          { title: "The Oxford Companion to English Literature", url: "https://openlibrary.org/search?q=Oxford+Companion+English+Literature+Dinah+Birch", author: "Dinah Birch (ed.)", desc: "Authoritative A–Z reference for authors, works, movements, and literary terms." },
+          { title: "The Elements of Style", url: "https://www.gutenberg.org/ebooks/37134", author: "William Strunk Jr. & E. B. White", desc: "The classic guide to concise, clear English writing — free on Project Gutenberg." },
+          { title: "Literary Theory: An Introduction", url: "https://openlibrary.org/search?q=Literary+Theory+Introduction+Terry+Eagleton", author: "Terry Eagleton", desc: "Witty, accessible survey of structuralism, post-structuralism, Marxism, and other critical theories." },
+          { title: "A Room of One's Own", url: "https://www.gutenberg.org/ebooks/search/?query=room+of+ones+own+woolf", author: "Virginia Woolf", desc: "Landmark feminist essay on women and fiction — free online; essential for literary and gender studies." },
+        ],
+        youtube: [
+          { name: "CrashCourse Literature", url: "https://www.youtube.com/@crashcourse", desc: "John Green and others cover major literary works — context, themes, and critical approaches." },
+          { name: "The School of Life", url: "https://www.youtube.com/@theschooloflifeofficial", desc: "Philosophy, literature, and big ideas explained accessibly — great for critical analysis." },
+          { name: "TED-Ed", url: "https://www.youtube.com/@TEDEd", desc: "Short animated lessons on literary works, writing craft, and rhetorical techniques." },
+          { name: "Thug Notes", url: "https://www.youtube.com/@thugnotes", desc: "Entertaining plot summaries and literary analysis of canonical texts in a memorable style." },
+          { name: "Like Stories of Old", url: "https://www.youtube.com/@LikeStoriesofOld", desc: "Deep, philosophical video essays connecting literature, film, and the human condition." },
+        ],
+      },
+
+      'Biochemistry': {
+        label: 'Genetics & Biochemistry',
+        subtitle: 'Molecular biology, metabolic pathways, genetics, cell biology, and bioinformatics.',
+        pdfs: [
+          { title: "NCBI Molecular Biology Guides", url: "https://www.ncbi.nlm.nih.gov", desc: "Free reference materials on DNA replication, transcription, translation, and gene regulation from ncbi.nlm.nih.gov." },
+          { title: "Amino Acid Properties Reference Card", url: "https://www.rcsb.org", desc: "Structures, one-letter codes, pKa values, and functional properties of all 20 standard amino acids." },
+          { title: "Metabolic Pathways Poster", url: "https://www.genome.jp/kegg/pathway.html", desc: "KEGG interactive metabolic pathways — glycolysis, Krebs cycle, oxidative phosphorylation, and more." },
+          { title: "HHMI BioInteractive Labs", url: "https://www.hhmi.org/biointeractive", desc: "Downloadable guided lab activities on CRISPR, evolution, and molecular genetics from HHMI." },
+          { title: "Genetics Notation & Terminology Sheet", url: "https://www.genome.gov", desc: "Quick reference for Mendelian notation, pedigree symbols, Hardy-Weinberg, and genetic mapping." },
+          { title: "PubMed Central Open Access Papers", url: "https://www.ncbi.nlm.nih.gov/pmc/", desc: "Free full-text archive of biomedical and life sciences journal literature — millions of open-access papers." },
+          { title: "OpenStax Biology (Free PDF)", url: "https://openstax.org/subjects/science", desc: "Peer-reviewed, openly licensed biology textbooks covering cell biology, genetics, and ecology — free download." },
+          { title: "bioRxiv — Biology Preprints", url: "https://www.biorxiv.org", desc: "Open-access preprint server for biology — read the latest molecular biology research before formal publication." },
+        ],
+        websites: [
+          { name: "NCBI", url: "https://www.ncbi.nlm.nih.gov", icon: "🧬", desc: "PubMed, GenBank, BLAST — the US national database for molecular biology information." },
+          { name: "UniProt", url: "https://www.uniprot.org", icon: "🔬", desc: "Comprehensive protein sequence and functional information database maintained by Swiss-Prot." },
+          { name: "HHMI BioInteractive", url: "https://www.hhmi.org/biointeractive", icon: "🎬", desc: "Free, research-based biology education resources including films, interactives, and lab activities." },
+          { name: "Khan Academy Biology", url: "https://www.khanacademy.org/science/biology", icon: "🎓", desc: "Free lessons on cell biology, genetics, molecular biology, and evolution." },
+          { name: "Ensembl Genome Browser", url: "https://www.ensembl.org", icon: "💻", desc: "Interactive genome browser for exploring genes, variants, and annotations across species." },
+          { name: "PubChem", url: "https://pubchem.ncbi.nlm.nih.gov", icon: "⚗️", desc: "Chemical structures, properties, and bioactivity data for small molecules." },
+          { name: "PubMed Central (PMC)", url: "https://www.ncbi.nlm.nih.gov/pmc/", icon: "📰", desc: "Free full-text archive of over 9 million biomedical and life sciences articles." },
+          { name: "bioRxiv", url: "https://www.biorxiv.org", icon: "🧫", desc: "Open-access preprint server for biology — read and share research before peer review." },
+          { name: "RCSB Protein Data Bank", url: "https://www.rcsb.org", icon: "🔩", desc: "3D structural data for proteins and nucleic acids — visualise molecular structures interactively." },
+        ],
+        books: [
+          { title: "Lehninger Principles of Biochemistry", url: "https://openlibrary.org/search?q=Lehninger+Principles+Biochemistry+Nelson+Cox", author: "David L. Nelson & Michael M. Cox", desc: "The most comprehensive biochemistry textbook — rigorous, beautifully illustrated, and complete." },
+          { title: "Molecular Biology of the Cell", url: "https://openlibrary.org/search?q=Molecular+Biology+Cell+Alberts", author: "Bruce Alberts et al.", desc: "The standard cell biology reference — integrates molecular mechanisms with cellular function." },
+          { title: "Genetics: From Genes to Genomes", url: "https://openlibrary.org/search?q=Genetics+Genes+Genomes+Hartwell", author: "Leland Hartwell et al.", desc: "Modern genetics covering classical Mendelian inheritance through genomics and CRISPR." },
+          { title: "Biochemistry", url: "https://openlibrary.org/search?q=Biochemistry+Berg+Tymoczko+Gatto", author: "Jeremy M. Berg, John L. Tymoczko & Gregory J. Gatto", desc: "Clear, mechanistic treatment of metabolism, enzyme kinetics, and signal transduction." },
+          { title: "Molecular Cell Biology", url: "https://openlibrary.org/search?q=Molecular+Cell+Biology+Lodish", author: "Harvey Lodish et al.", desc: "Bridges cell biology and molecular biology with up-to-date research and clinical connections." },
+          { title: "Essential Cell Biology", url: "https://openlibrary.org/search?q=Essential+Cell+Biology+Alberts+Hopkin", author: "Bruce Alberts, Karen Hopkin et al.", desc: "Concise, accessible introduction to cell biology — the ideal starting point before Molecular Biology of the Cell." },
+          { title: "Introduction to Genetic Analysis", url: "https://openlibrary.org/search?q=Introduction+Genetic+Analysis+Griffiths", author: "Anthony J. F. Griffiths et al.", desc: "Classic genetics textbook from classical to molecular — strong problem sets and clear explanations." },
+          { title: "Biochemistry (Voet & Voet)", url: "https://openlibrary.org/search?q=Biochemistry+Voet+Voet", author: "Donald Voet & Judith G. Voet", desc: "Highly detailed, research-oriented biochemistry text — ideal for students pursuing graduate study." },
+        ],
+        youtube: [
+          { name: "Amoeba Sisters", url: "https://www.youtube.com/@AmoebaSisters", desc: "Engaging animated videos on genetics, DNA replication, transcription, and cell division." },
+          { name: "Professor Dave Explains", url: "https://www.youtube.com/@ProfessorDaveExplains", desc: "Clear, affordable biochemistry and molecular biology lectures covering every major topic." },
+          { name: "Khan Academy Biology", url: "https://www.youtube.com/@khanacademy", desc: "Free lessons on genetics, evolution, molecular biology, and cell signalling." },
+          { name: "HHMI BioInteractive", url: "https://www.youtube.com/@HHMIBioInteractive", desc: "Research-quality documentary-style videos on genetics, evolution, and neuroscience." },
+          { name: "Ninja Nerd Science", url: "https://www.youtube.com/@ninjanerdscience", desc: "Detailed whiteboard-style lectures on biochemical pathways, enzyme kinetics, and metabolism." },
+        ],
+      },
+
+      'Law': {
+        label: 'Law',
+        subtitle: 'Constitutional, international, contract, tort, criminal, and commercial law.',
+        pdfs: [
+          { title: "Cornell LII Case Summaries", url: "https://www.law.cornell.edu", desc: "Free case briefs and legal notes for landmark cases in constitutional, tort, and contract law (law.cornell.edu)." },
+          { title: "Black's Law Dictionary Key Terms", url: "https://thelawdictionary.org", desc: "Essential legal definitions condensed from Bryan Garner's authoritative law dictionary." },
+          { title: "UN Charter & UDHR Full Text", url: "https://www.un.org/en/about-us/un-charter", desc: "The United Nations Charter and the Universal Declaration of Human Rights — essential primary sources." },
+          { title: "OSCOLA Citation Guide", url: "https://www.law.ox.ac.uk", desc: "Official Oxford Standard for Citation of Legal Authorities — referencing cases, statutes, and journals." },
+          { title: "Contract Law Elements Cheat Sheet", url: "https://www.law.cornell.edu/wex/contract", desc: "Offer, acceptance, consideration, capacity, and vitiating factors summarised with leading cases." },
+          { title: "SSRN Legal Research Papers", url: "https://www.ssrn.com/index.cfm/en/", desc: "Open-access working papers in law, economics, and social sciences — thousands of pre-publication articles." },
+          { title: "International Court of Justice Rulings", url: "https://www.icj-cij.org/decisions", desc: "Full text of ICJ judgments, advisory opinions, and orders — primary sources for international law." },
+          { title: "Google Scholar — Case Law", url: "https://scholar.google.com", desc: "Free full-text search across court opinions, law review articles, and legal journals worldwide." },
+        ],
+        websites: [
+          { name: "Cornell Law School LII", url: "https://www.law.cornell.edu", icon: "⚖️", desc: "Free access to US Code, CFR, case law, and plain-English legal explanations." },
+          { name: "Justia", url: "https://www.justia.com", icon: "🏛️", desc: "Free case law, US codes, regulations, and legal forms — comprehensive and well-organised." },
+          { name: "EUR-Lex", url: "https://eur-lex.europa.eu", icon: "🇪🇺", desc: "Official access to European Union law — treaties, directives, regulations, and case law." },
+          { name: "UN Treaty Collection", url: "https://treaties.un.org", icon: "🌐", desc: "Full text of international treaties deposited with the UN Secretary-General." },
+          { name: "BAILII", url: "https://www.bailii.org", icon: "📜", desc: "Free access to British and Irish case law and legislation — essential for UK law students." },
+          { name: "Westlaw (via institution)", url: "https://www.westlaw.com", icon: "🔍", desc: "Comprehensive legal research database — access through your university library portal." },
+          { name: "SSRN", url: "https://www.ssrn.com", icon: "📄", desc: "Social Science Research Network — thousands of free working papers in law and legal scholarship." },
+          { name: "International Court of Justice", url: "https://www.icj-cij.org", icon: "🌍", desc: "Official ICJ site — full texts of judgments, advisory opinions, and pending cases." },
+          { name: "Google Scholar (Legal)", url: "https://scholar.google.com", icon: "🔎", desc: "Free search across court opinions and legal articles — great for finding case law and scholarly sources." },
+        ],
+        books: [
+          { title: "Black's Law Dictionary", url: "https://openlibrary.org/search?q=Black%27s+Law+Dictionary+Bryan+Garner", author: "Bryan A. Garner", desc: "The most authoritative law dictionary in the English language — essential desk reference." },
+          { title: "The Rule of Law", url: "https://openlibrary.org/search?q=Rule+of+Law+Tom+Bingham", author: "Tom Bingham", desc: "Brilliant, readable exploration of what the rule of law means and why it matters — a modern classic." },
+          { title: "Constitutional Law", url: "https://openlibrary.org/search?q=Constitutional+Law+Chemerinsky", author: "Erwin Chemerinsky", desc: "The leading US constitutional law textbook — comprehensive, clearly argued, and frequently updated." },
+          { title: "Salmond on Jurisprudence", url: "https://openlibrary.org/search?q=Salmond+on+Jurisprudence", author: "P. J. Fitzgerald (ed.)", desc: "Foundational jurisprudence text on legal theory, rights, duties, and sources of law." },
+          { title: "Smith & Hogan Criminal Law", url: "https://openlibrary.org/search?q=Smith+Hogan+Criminal+Law+Ormerod", author: "David Ormerod & Karl Laird", desc: "The definitive English criminal law textbook — thorough coverage of offences and defences." },
+          { title: "Jurisprudence", url: "https://openlibrary.org/search?q=Jurisprudence+Raymond+Wacks", author: "Raymond Wacks", desc: "Concise, authoritative introduction to legal philosophy — natural law, positivism, and critical theory." },
+          { title: "International Law", url: "https://openlibrary.org/search?q=International+Law+Malcolm+Shaw", author: "Malcolm N. Shaw", desc: "The leading international law textbook — treaties, state responsibility, human rights, and dispute resolution." },
+          { title: "Winfield & Jolowicz on Tort", url: "https://openlibrary.org/search?q=Winfield+Jolowicz+Tort", author: "W. V. H. Rogers", desc: "Comprehensive English tort law reference — negligence, nuisance, defamation, and occupiers' liability." },
+        ],
+        youtube: [
+          { name: "LegalEagle", url: "https://www.youtube.com/@LegalEagle", desc: "Practicing attorney breaks down real cases, legal concepts, and pop-culture law — engaging and accurate." },
+          { name: "CrashCourse Government & Politics", url: "https://www.youtube.com/@crashcourse", desc: "Covers constitutional principles, civil liberties, and the structure of government and law." },
+          { name: "Khan Academy — Civics", url: "https://www.youtube.com/@khanacademy", desc: "Accessible videos on the US legal system, civil rights, and how courts work." },
+          { name: "Quimbee", url: "https://www.youtube.com/@Quimbee", desc: "Animated case briefs and outlines for law school — contracts, torts, property, and more." },
+          { name: "Law School Toolbox", url: "https://www.youtube.com/@LawSchoolToolbox", desc: "Study strategies, outline tips, and exam technique for law students." },
+        ],
+      },
+
+      'Pharmacy': {
+        label: 'Pharmacy',
+        subtitle: 'Pharmacology, pharmaceutical chemistry, clinical pharmacy, drug formulation, and toxicology.',
+        pdfs: [
+          { title: "WHO Model List of Essential Medicines", url: "https://www.who.int", desc: "The official WHO EML — drug classes, indications, and standard dosing for essential medicines (who.int)." },
+          { title: "BNF Quick Drug Reference", url: "https://bnf.nice.org.uk", desc: "Key drug monographs, dosage guidelines, and contraindications from the British National Formulary." },
+          { title: "Pharmacokinetics Cheat Sheet", url: "https://www.rxlist.com", desc: "ADME principles, one-compartment model equations, half-life, Vd, and clearance formulae." },
+          { title: "Common Drug Interactions Card", url: "https://www.drugs.com/drug_interactions.html", desc: "High-yield drug-drug and drug-food interactions for the most frequently tested medications." },
+          { title: "Autonomic Pharmacology Summary", url: "https://www.khanacademy.org/science/health-and-medicine", desc: "Sympathetic/parasympathetic receptor types, agonists, antagonists, and clinical applications at a glance." },
+          { title: "PubMed — Pharmacology Research", url: "https://pubmed.ncbi.nlm.nih.gov", desc: "Search millions of biomedical research articles — pharmacokinetics, drug trials, and new drug approvals." },
+          { title: "EMA Drug Evaluation Guidelines", url: "https://www.ema.europa.eu/en/documents/scientific-guideline", desc: "European Medicines Agency scientific guidelines on drug evaluation, clinical trials, and safety." },
+          { title: "ClinicalTrials.gov Study Protocols", url: "https://clinicaltrials.gov", desc: "Database of clinical studies — view protocols, eligibility criteria, and results for drug trials worldwide." },
+        ],
+        websites: [
+          { name: "Drugs.com", url: "https://www.drugs.com", icon: "💊", desc: "Drug information, interactions checker, pill identifier, and side-effect profiles." },
+          { name: "BNF Online", url: "https://bnf.nice.org.uk", icon: "📋", desc: "British National Formulary — prescribing guidelines, drug monographs, and NICE guidance." },
+          { name: "PubChem", url: "https://pubchem.ncbi.nlm.nih.gov", icon: "⚗️", desc: "Chemical structures, pharmacology data, and bioactivity for drugs and small molecules." },
+          { name: "WHO", url: "https://www.who.int", icon: "🌍", desc: "Essential medicines lists, drug quality standards, and global health guidelines." },
+          { name: "FDA Drug Database", url: "https://www.fda.gov/drugs", icon: "🏛️", desc: "US Food & Drug Administration drug approvals, safety alerts, and labelling information." },
+          { name: "RxList", url: "https://www.rxlist.com", icon: "🔬", desc: "Detailed drug monographs with pharmacokinetics, mechanism of action, and clinical pharmacology." },
+          { name: "PubMed", url: "https://pubmed.ncbi.nlm.nih.gov", icon: "📰", desc: "Search 35+ million citations in biomedical literature — the primary research database for pharmacy." },
+          { name: "ClinicalTrials.gov", url: "https://clinicaltrials.gov", icon: "🧪", desc: "Registry of clinical studies — find ongoing trials, results, and investigational new drug data." },
+          { name: "MedlinePlus", url: "https://medlineplus.gov", icon: "❤️", desc: "NIH's patient-friendly drug and health information database — reliable, free, and up-to-date." },
+        ],
+        books: [
+          { title: "Rang & Dale's Pharmacology", url: "https://openlibrary.org/search?q=Rang+Dale+Pharmacology", author: "Humphrey Rang, Rod Dale et al.", desc: "The leading undergraduate pharmacology textbook — mechanistic, well-illustrated, and comprehensive." },
+          { title: "Goodman & Gilman's The Pharmacological Basis of Therapeutics", url: "https://openlibrary.org/search?q=Goodman+Gilman+Pharmacological+Basis+Therapeutics", author: "Laurence Brunton et al.", desc: "The definitive advanced pharmacology reference — detailed mechanisms and clinical application." },
+          { title: "Basic & Clinical Pharmacology", url: "https://openlibrary.org/search?q=Basic+Clinical+Pharmacology+Katzung", author: "Bertram Katzung", desc: "Bridges basic science and clinical use — widely used in medical and pharmacy programs." },
+          { title: "Foye's Principles of Medicinal Chemistry", url: "https://openlibrary.org/search?q=Foye%27s+Principles+Medicinal+Chemistry+Lemke", author: "Thomas Lemke et al.", desc: "Structure-activity relationships, drug design, and the chemistry behind drug action." },
+          { title: "Clinical Pharmacokinetics", url: "https://openlibrary.org/search?q=Clinical+Pharmacokinetics+Rowland+Tozer", author: "Malcolm Rowland & Thomas Tozer", desc: "Rigorous treatment of ADME, dosage regimen design, and population pharmacokinetics." },
+          { title: "Pharmacotherapy: A Pathophysiologic Approach", url: "https://openlibrary.org/search?q=Pharmacotherapy+Pathophysiologic+Approach+DiPiro", author: "Joseph T. DiPiro et al.", desc: "Comprehensive clinical pharmacy reference linking disease pathophysiology to drug therapy selection." },
+          { title: "Applied Biopharmaceutics & Pharmacokinetics", url: "https://openlibrary.org/search?q=Applied+Biopharmaceutics+Pharmacokinetics+Shargel", author: "Leon Shargel & Andrew B. C. Yu", desc: "Standard text for drug absorption, distribution, bioavailability, and dosage regimen design." },
+          { title: "Clinical Pharmacology & Therapeutics", url: "https://openlibrary.org/search?q=Clinical+Pharmacology+Therapeutics+Ritter", author: "James M. Ritter et al.", desc: "Practical guide connecting pharmacology to clinical decision-making — widely used by pharmacy students." },
+        ],
+        youtube: [
+          { name: "Speed Pharmacology", url: "https://www.youtube.com/@SpeedPharmacology", desc: "Concise, visually clean videos on drug classes — mechanism, uses, and side effects summarised." },
+          { name: "Ninja Nerd Science", url: "https://www.youtube.com/@ninjanerdscience", desc: "Detailed whiteboard-style pharmacology lectures covering every major drug class." },
+          { name: "Sketchy Medical", url: "https://www.youtube.com/@sketchy", desc: "Mnemonic-based visual storytelling for pharmacology — highly effective for memorisation." },
+          { name: "Strong Medicine", url: "https://www.youtube.com/@StrongMedicine", desc: "Clinical pharmacology for health profession students — mechanisms linked to patient care." },
+          { name: "Khan Academy Health & Medicine", url: "https://www.youtube.com/@khanacademy", desc: "Accessible videos on drug mechanisms, pharmacokinetics, and clinical applications." },
+        ],
+      },
+
+      'Economics': {
+        label: 'Economics',
+        subtitle: 'Microeconomics, macroeconomics, econometrics, development economics, and financial markets.',
+        pdfs: [
+          { title: "World Bank Open Data Reports", url: "https://data.worldbank.org", desc: "Free country-level economic data, working papers, and development reports (data.worldbank.org)." },
+          { title: "IMF World Economic Outlook", url: "https://www.imf.org/en/Publications/WEO", desc: "Twice-yearly global economic analysis, forecasts, and datasets from the IMF (imf.org)." },
+          { title: "FRED Quick-Start Guide", url: "https://fred.stlouisfed.org", desc: "How to access and download economic time-series data from the Federal Reserve (fred.stlouisfed.org)." },
+          { title: "Mankiw's 10 Principles of Economics", url: "https://openlibrary.org/search?q=Principles+Economics+Mankiw", desc: "The foundational framework from Principles of Economics — summarised with examples." },
+          { title: "Microeconomics Formula Sheet", url: "https://www.khanacademy.org/economics-finance-domain/ap-microeconomics", desc: "Elasticity, consumer surplus, cost curves, game theory, and market structure formulae." },
+          { title: "SSRN Economics Research Papers", url: "https://www.ssrn.com/index.cfm/en/", desc: "Free working papers in economics and finance — thousands of pre-publication articles from leading economists." },
+          { title: "OpenStax Economics (Free Textbook)", url: "https://openstax.org/subjects/social-sciences", desc: "Peer-reviewed, freely downloadable principles of economics and microeconomics/macroeconomics textbooks." },
+          { title: "NBER Working Papers", url: "https://www.nber.org/papers", desc: "National Bureau of Economic Research working papers — frontier research from top economists, many free." },
+        ],
+        websites: [
+          { name: "FRED — Federal Reserve Economic Data", url: "https://fred.stlouisfed.org", icon: "📈", desc: "500,000+ US and international economic time series — free data and visualisation tools." },
+          { name: "World Bank Open Data", url: "https://data.worldbank.org", icon: "🌍", desc: "Free access to global development data — GDP, poverty, trade, health, and education indicators." },
+          { name: "IMF", url: "https://www.imf.org", icon: "🏛️", desc: "World Economic Outlook, working papers, and economic surveillance data." },
+          { name: "Investopedia", url: "https://www.investopedia.com", icon: "💹", desc: "Plain-English explanations of financial and economic terms, concepts, and models." },
+          { name: "NBER", url: "https://www.nber.org", icon: "📄", desc: "National Bureau of Economic Research — working papers and business cycle dating." },
+          { name: "Our World in Data", url: "https://ourworldindata.org", icon: "🔍", desc: "Data-driven research on economics, health, and global development with interactive charts." },
+          { name: "SSRN", url: "https://www.ssrn.com", icon: "📑", desc: "Social Science Research Network — free working papers in economics, finance, and law." },
+          { name: "OpenStax Economics", url: "https://openstax.org/subjects/social-sciences", icon: "📗", desc: "Free, peer-reviewed principles of economics, microeconomics, and macroeconomics textbooks." },
+          { name: "Economics Observatory", url: "https://www.economicsobservatory.com", icon: "🔭", desc: "Expert economists answer current policy questions in plain English — ideal for applied economic context." },
+        ],
+        books: [
+          { title: "Principles of Economics", url: "https://openlibrary.org/search?q=Principles+Economics+N+Gregory+Mankiw", author: "N. Gregory Mankiw", desc: "The most widely adopted economics textbook worldwide — clear, engaging, and balanced." },
+          { title: "Thinking, Fast and Slow", url: "https://openlibrary.org/search?q=Thinking+Fast+and+Slow+Daniel+Kahneman", author: "Daniel Kahneman", desc: "Nobel Prize-winning exploration of cognitive biases and decision-making — essential for behavioural economics." },
+          { title: "The Wealth of Nations", url: "https://www.gutenberg.org/ebooks/search/?query=wealth+of+nations+adam+smith", author: "Adam Smith", desc: "The foundational text of modern economics — free on Project Gutenberg; division of labour, markets, and the invisible hand." },
+          { title: "Freakonomics", url: "https://openlibrary.org/search?q=Freakonomics+Levitt+Dubner", author: "Steven D. Levitt & Stephen J. Dubner", desc: "Applies economic thinking to surprising topics — builds intuition for incentives and unintended consequences." },
+          { title: "Capital in the Twenty-First Century", url: "https://openlibrary.org/search?q=Capital+Twenty-First+Century+Piketty", author: "Thomas Piketty", desc: "Landmark empirical analysis of wealth inequality across two centuries — r > g." },
+          { title: "Intermediate Microeconomics", url: "https://openlibrary.org/search?q=Intermediate+Microeconomics+Hal+Varian", author: "Hal R. Varian", desc: "The standard intermediate microeconomics text — consumer theory, production, game theory, and market design." },
+          { title: "Macroeconomics", url: "https://openlibrary.org/search?q=Macroeconomics+Olivier+Blanchard", author: "Olivier Blanchard", desc: "Balanced treatment of short-run and long-run macro models — IS-LM, AS-AD, and open economy extensions." },
+          { title: "The General Theory of Employment, Interest and Money", url: "https://www.gutenberg.org/ebooks/search/?query=general+theory+employment+keynes", author: "John Maynard Keynes", desc: "The seminal work of macroeconomics — foundational reading for understanding aggregate demand and fiscal policy." },
+        ],
+        youtube: [
+          { name: "Marginal Revolution University", url: "https://www.youtube.com/@mruniversity", desc: "Free, high-quality economics courses from Tyler Cowen & Alex Tabarrok of George Mason University." },
+          { name: "CrashCourse Economics", url: "https://www.youtube.com/@crashcourse", desc: "Engaging introductory coverage of macro and microeconomics essentials." },
+          { name: "Khan Academy — Economics", url: "https://www.youtube.com/@khanacademy", desc: "Supply & demand, GDP, monetary policy, fiscal policy, and international trade." },
+          { name: "EconplusDal", url: "https://www.youtube.com/@econplusdal", desc: "Targeted exam preparation for A-level and university economics — clear worked examples." },
+          { name: "The Plain Bagel", url: "https://www.youtube.com/@ThePlainBagel", desc: "Personal finance and macroeconomic concepts explained in plain, accessible language." },
+        ],
+      },
+
+    };
+
+    function showDeptView() {
+      document.getElementById('dept-view').style.display = '';
+      document.getElementById('resources-view').classList.remove('visible');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showResources(key) {
+      const data = resources[key];
+      document.getElementById('dept-title').textContent = data.label;
+      document.getElementById('dept-subtitle').textContent = data.subtitle;
+
+      const pdfHTML = data.pdfs.map(p => `
+        <div class="pdf-item">
+          <div class="pdf-dot"></div>
+          <div>
+            <div class="pdf-title"><a href="${p.url}" target="_blank" rel="noopener">${p.title} ↗</a></div>
+            <div class="pdf-desc">${p.desc}</div>
+          </div>
+        </div>`).join('');
+
+      const siteHTML = data.websites.map(s => `
+        <a class="site-item" href="${s.url}" target="_blank" rel="noopener">
+          <div class="site-favicon">${s.icon}</div>
+          <div>
+            <div class="site-name">${s.name}</div>
+            <div class="site-desc">${s.desc}</div>
+          </div>
+        </a>`).join('');
+
+      const bookHTML = data.books.map(b => `
+        <div class="book-item">
+          <div class="book-spine"></div>
+          <div>
+            <div class="book-title"><a href="${b.url}" target="_blank" rel="noopener">${b.title} ↗</a></div>
+            <div class="book-author">${b.author}</div>
+            <div class="book-desc">${b.desc}</div>
+          </div>
+        </div>`).join('');
+
+      const ytHTML = data.youtube.map(y => `
+        <a class="yt-item" href="${y.url}" target="_blank" rel="noopener">
+          <div class="yt-thumb">▶</div>
+          <div>
+            <div class="yt-name">${y.name}</div>
+            <div class="yt-desc">${y.desc}</div>
+          </div>
+        </a>`).join('');
+
+      document.getElementById('resource-grid').innerHTML = `
+        <div class="resource-card">
+          <div class="resource-card-header">
+            <div class="resource-card-icon">📄</div>
+            <div><h3>PDFs &amp; Study Sheets</h3><p>${data.pdfs.length} resources</p></div>
+          </div>
+          ${pdfHTML}
+        </div>
+        <div class="resource-card">
+          <div class="resource-card-header">
+            <div class="resource-card-icon">🌐</div>
+            <div><h3>Important Websites</h3><p>${data.websites.length} resources</p></div>
+          </div>
+          ${siteHTML}
+        </div>
+        <div class="resource-card">
+          <div class="resource-card-header">
+            <div class="resource-card-icon">📚</div>
+            <div><h3>Books &amp; Authors</h3><p>${data.books.length} resources</p></div>
+          </div>
+          ${bookHTML}
+        </div>
+        <div class="resource-card">
+          <div class="resource-card-header">
+            <div class="resource-card-icon">🎥</div>
+            <div><h3>YouTube Channels</h3><p>${data.youtube.length} resources</p></div>
+          </div>
+          ${ytHTML}
+        </div>`;
+
+      document.getElementById('dept-view').style.display = 'none';
+      document.getElementById('resources-view').classList.add('visible');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.querySelectorAll('.dept-card').forEach(card => {
+      card.addEventListener('click', () => showResources(card.dataset.dept));
+    });
+
+    document.getElementById('backToDepts').addEventListener('click', showDeptView);
+  </script>
+  <div th:replace="~{chatbot-fragment :: chatbot}"></div>
+</body>
+</html>

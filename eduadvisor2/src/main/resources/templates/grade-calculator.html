@@ -1,0 +1,775 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{var _t=localStorage.getItem('eduadvisor-theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grade Calculator – EduAdvisor</title>
+  <style>
+    :root {
+      --bg: #eef3ff;
+      --panel: #ffffff;
+      --accent: #3f61ff;
+      --text: #1f2b44;
+      --muted: #6d7a98;
+      --border: rgba(63, 97, 255, 0.12);
+      --green: #16a34a;
+      --red: #dc2626;
+      --orange: #ea580c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #dbe4ff 0%, #eef3ff 55%, #f9fbff 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+      gap: 24px;
+      padding: 24px;
+    }
+    .sidebar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 28px 20px;
+      box-shadow: 0 24px 60px rgba(47, 67, 120, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: sticky;
+      top: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); }
+    .brand-title { font-size: 1.05rem; font-weight: 700; }
+    .nav-list { list-style: none; display: grid; gap: 12px; }
+    .nav-item { border-radius: 18px; overflow: hidden; }
+    .nav-link {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px; text-decoration: none;
+      color: var(--text); font-weight: 600;
+      background: #f9fbff;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: rgba(63, 97, 255, 0.12);
+      transform: translateX(2px);
+    }
+    .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; color: var(--accent); }
+    .profile-card {
+      padding: 18px; border-radius: 22px;
+      background: #f8faff; border: 1px solid rgba(63, 97, 255, 0.08);
+    }
+    .profile-card h2 { font-size: 1.1rem; margin-bottom: 6px; }
+    .profile-card p { color: var(--muted); font-size: 0.95rem; }
+
+    /* ── Main content ── */
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .page-header {
+      background: var(--panel);
+      border-radius: 24px;
+      padding: 28px 32px;
+      box-shadow: 0 4px 20px rgba(47, 67, 120, 0.06);
+    }
+    .page-header h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; }
+    .page-header p { color: var(--muted); font-size: 0.97rem; }
+
+    /* ── Step indicator ── */
+    .steps-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 18px 28px;
+      box-shadow: 0 4px 20px rgba(47, 67, 120, 0.06);
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+    .step-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(63, 97, 255, 0.1);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 0.95rem;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .step-circle.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(63, 97, 255, 0.4);
+    }
+    .step-circle.done {
+      background: var(--green);
+      color: #fff;
+    }
+    .step-label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+    .step-label.active { color: var(--accent); }
+    .step-connector {
+      flex: 1;
+      height: 2px;
+      background: rgba(63, 97, 255, 0.15);
+      margin: 0 8px;
+    }
+
+    /* ── Cards container ── */
+    .calc-card {
+      background: var(--panel);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(47, 67, 120, 0.06);
+    }
+    .calc-card h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+    .calc-card .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+
+    /* ── Step 1: Course type ── */
+    .type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .type-card {
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-align: center;
+      background: #f9fbff;
+    }
+    .type-card:hover { border-color: var(--accent); background: rgba(63, 97, 255, 0.04); transform: translateY(-2px); }
+    .type-card.selected { border-color: var(--accent); background: rgba(63, 97, 255, 0.08); }
+    .type-icon { font-size: 3rem; margin-bottom: 14px; }
+    .type-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 8px; }
+    .type-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+    .type-badge {
+      display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+      margin-top: 12px;
+    }
+    .badge {
+      background: rgba(63, 97, 255, 0.1);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── Step 2: Inputs ── */
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .input-group { display: flex; flex-direction: column; gap: 8px; }
+    .input-group label {
+      font-size: 0.87rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .input-group .max-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: rgba(63, 97, 255, 0.08);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .input-row input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      background: #f9fbff;
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 0;
+    }
+    .input-row input:focus { border-color: var(--accent); }
+    .input-row input.invalid { border-color: var(--red); background: #fff5f5; }
+    .input-divider { font-weight: 800; color: var(--muted); font-size: 1.1rem; }
+    .quiz-section {
+      grid-column: 1 / -1;
+      background: rgba(63, 97, 255, 0.04);
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+    }
+    .quiz-section-title {
+      font-size: 0.87rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .quiz-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .quiz-input-group { display: flex; flex-direction: column; gap: 6px; }
+    .quiz-input-group label { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+    .quiz-input-group input {
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.97rem;
+      font-weight: 700;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .quiz-input-group input:focus { border-color: var(--accent); }
+    .quiz-max-hint { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Step 3: Grade selector ── */
+    .grade-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    .grade-btn {
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 8px;
+      cursor: pointer;
+      text-align: center;
+      background: #f9fbff;
+      transition: all 0.2s;
+    }
+    .grade-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .grade-btn.selected { border-color: var(--accent); background: rgba(63, 97, 255, 0.08); }
+    .grade-letter { font-size: 1.3rem; font-weight: 900; color: var(--accent); }
+    .grade-gpa { font-size: 0.78rem; font-weight: 700; color: var(--muted); margin-top: 4px; }
+    .grade-min { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Result card ── */
+    .result-card {
+      border-radius: 20px;
+      padding: 28px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    .result-card.achievable {
+      background: linear-gradient(135deg, rgba(22, 163, 74, 0.08), rgba(22, 163, 74, 0.03));
+      border: 2px solid rgba(22, 163, 74, 0.25);
+    }
+    .result-card.tight {
+      background: linear-gradient(135deg, rgba(234, 88, 12, 0.08), rgba(234, 88, 12, 0.03));
+      border: 2px solid rgba(234, 88, 12, 0.25);
+    }
+    .result-card.impossible {
+      background: linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(220, 38, 38, 0.03));
+      border: 2px solid rgba(220, 38, 38, 0.25);
+    }
+    .result-card.already-done {
+      background: linear-gradient(135deg, rgba(63, 97, 255, 0.08), rgba(63, 97, 255, 0.03));
+      border: 2px solid rgba(63, 97, 255, 0.25);
+    }
+    .result-icon { font-size: 3rem; margin-bottom: 12px; }
+    .result-main { font-size: 2.2rem; font-weight: 900; margin-bottom: 8px; }
+    .result-main.green { color: var(--green); }
+    .result-main.orange { color: var(--orange); }
+    .result-main.red { color: var(--red); }
+    .result-main.blue { color: var(--accent); }
+    .result-desc { font-size: 1rem; color: var(--muted); line-height: 1.5; margin-bottom: 20px; }
+    .result-breakdown {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .breakdown-item {
+      background: rgba(255,255,255,0.7);
+      border-radius: 14px;
+      padding: 14px 10px;
+    }
+    .breakdown-val { font-size: 1.4rem; font-weight: 900; color: var(--accent); }
+    .breakdown-label { font-size: 0.78rem; color: var(--muted); margin-top: 4px; font-weight: 600; }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 28px;
+      justify-content: flex-end;
+    }
+    .btn {
+      padding: 13px 28px;
+      border-radius: 14px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #2d4edb; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(63,97,255,0.3); }
+    .btn-primary:disabled { background: rgba(63,97,255,0.3); cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-secondary { background: rgba(63,97,255,0.1); color: var(--accent); }
+    .btn-secondary:hover { background: rgba(63,97,255,0.18); }
+    .btn-reset { background: #f1f5f9; color: var(--muted); }
+    .btn-reset:hover { background: #e2e8f0; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; padding: 16px; }
+      .type-grid, .inputs-grid { grid-template-columns: 1fr; }
+      .grade-grid { grid-template-columns: repeat(3, 1fr); }
+      .quiz-inputs { grid-template-columns: 1fr 1fr; }
+      .result-breakdown { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-title">Student Advice</div>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span>Home</a></li>
+      <li class="nav-item"><a href="advice.html" class="nav-link"><span class="nav-icon">🎯</span>Advice</a></li>
+      <li class="nav-item"><a href="schedule.html" class="nav-link"><span class="nav-icon">📅</span>Schedule</a></li>
+      <li class="nav-item"><a href="resources.html" class="nav-link"><span class="nav-icon">📚</span>Resources</a></li>
+      <li class="nav-item"><a href="counselling.html" class="nav-link"><span class="nav-icon">🗓️</span>Counselling Hours</a></li>
+      <li class="nav-item"><a href="CreaditTransfer.html" class="nav-link"><span class="nav-icon">🔄</span>Credit Transfer</a></li>
+      <li class="nav-item"><a href="my-courses.html" class="nav-link"><span class="nav-icon">📋</span>My Courses</a></li>
+      <li class="nav-item"><a href="grade-calculator.html" class="nav-link active"><span class="nav-icon">🎓</span>Grade Calculator</a></li>
+      <li class="nav-item"><a href="learning-gap.html" class="nav-link"><span class="nav-icon">🧠</span>Learning Gaps</a></li>
+      <li class="nav-item"><a href="https://diuqbank.com/#google_vignette" class="nav-link" target="_blank" rel="noopener noreferrer"><span class="nav-icon">📝</span>Q-Bank</a></li>
+      <li class="nav-item"><a href="discussion.html" class="nav-link"><span class="nav-icon">💬</span>Discussion</a></li>
+      <li class="nav-item"><a href="my-papers.html" class="nav-link"><span class="nav-icon">📄</span>My Papers</a></li>
+      <li class="nav-item"><a href="lost-found.html" class="nav-link"><span class="nav-icon">🔍</span>Lost &amp; Found</a></li>
+      <li class="nav-item"><a href="profile.html" class="nav-link"><span class="nav-icon">👤</span>Profile</a></li>
+      <li class="nav-item"><a href="/logout" class="nav-link"><span class="nav-icon">🚪</span>Logout</a></li>
+    </ul>
+    <div class="profile-card">
+      <h2 th:text="${studentName}">Student</h2>
+      <p>Student ID: <span th:text="${studentId}">S12345</span></p>
+      <a href="/logout" style="display:block;margin-top:10px;font-size:0.82rem;color:#6d7a98;text-decoration:none;">⬅ Logout</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>🎓 Grade Calculator</h1>
+      <p>Find out how much you need to score in the final exam to reach your target grade.</p>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="steps-bar">
+      <div class="step-item">
+        <div class="step-circle active" id="circle-1">1</div>
+        <span class="step-label active" id="label-1">Course Type</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-item">
+        <div class="step-circle" id="circle-2">2</div>
+        <span class="step-label" id="label-2">Your Marks</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-item">
+        <div class="step-circle" id="circle-3">3</div>
+        <span class="step-label" id="label-3">Target Grade</span>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-item">
+        <div class="step-circle" id="circle-4">4</div>
+        <span class="step-label" id="label-4">Result</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Course type -->
+    <div class="calc-card" id="step-1">
+      <h2>What type of course is this?</h2>
+      <p class="subtitle">The marking breakdown differs for core and non-core courses.</p>
+      <div class="type-grid">
+        <div class="type-card" id="card-core" onclick="selectType('core')">
+          <div class="type-icon">📘</div>
+          <div class="type-title">Core Course</div>
+          <div class="type-desc">Major / theory courses with quizzes, assignments, and attendance.</div>
+          <div class="type-badge">
+            <span class="badge">Quiz Avg 15</span>
+            <span class="badge">Attendance 10</span>
+            <span class="badge">Assignment 35</span>
+            <span class="badge">Final 40</span>
+          </div>
+        </div>
+        <div class="type-card" id="card-noncore" onclick="selectType('noncore')">
+          <div class="type-icon">📗</div>
+          <div class="type-title">Non-Core Course</div>
+          <div class="type-desc">Elective / lab courses with mid exam, presentation, and quiz average.</div>
+          <div class="type-badge">
+            <span class="badge">Quiz Avg 15</span>
+            <span class="badge">Mid 25</span>
+            <span class="badge">Presentation 8</span>
+            <span class="badge">Attendance 7</span>
+            <span class="badge">Assignment 5</span>
+            <span class="badge">Final 40</span>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-step1-next" onclick="goStep(2)" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Marks input -->
+    <div class="calc-card hidden" id="step-2">
+      <h2>Enter your marks so far</h2>
+      <p class="subtitle" id="step2-subtitle">Enter what you have scored in each component (excluding the final exam).</p>
+
+      <div class="inputs-grid" id="inputs-container">
+        <!-- Dynamically built -->
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" id="btn-step2-next" onclick="goStep(3)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Target grade -->
+    <div class="calc-card hidden" id="step-3">
+      <h2>What grade are you aiming for?</h2>
+      <p class="subtitle">Select the grade you want to achieve in this course.</p>
+      <div class="grade-grid">
+        <div class="grade-btn" onclick="selectGrade(this, 80, 4.00, 'A+')" data-min="80">
+          <div class="grade-letter">A+</div>
+          <div class="grade-gpa">GPA 4.00</div>
+          <div class="grade-min">≥ 80</div>
+        </div>
+        <div class="grade-btn" onclick="selectGrade(this, 75, 3.75, 'A')" data-min="75">
+          <div class="grade-letter">A</div>
+          <div class="grade-gpa">GPA 3.75</div>
+          <div class="grade-min">≥ 75</div>
+        </div>
+        <div class="grade-btn" onclick="selectGrade(this, 70, 3.50, 'A-')" data-min="70">
+          <div class="grade-letter">A-</div>
+          <div class="grade-gpa">GPA 3.50</div>
+          <div class="grade-min">≥ 70</div>
+        </div>
+        <div class="grade-btn" onclick="selectGrade(this, 65, 3.25, 'B+')" data-min="65">
+          <div class="grade-letter">B+</div>
+          <div class="grade-gpa">GPA 3.25</div>
+          <div class="grade-min">≥ 65</div>
+        </div>
+        <div class="grade-btn" onclick="selectGrade(this, 60, 3.00, 'B')" data-min="60">
+          <div class="grade-letter">B</div>
+          <div class="grade-gpa">GPA 3.00</div>
+          <div class="grade-min">≥ 60</div>
+        </div>
+        <div class="grade-btn" onclick="selectGrade(this, 55, 2.75, 'B-')" data-min="55">
+          <div class="grade-letter">B-</div>
+          <div class="grade-gpa">GPA 2.75</div>
+          <div class="grade-min">≥ 55</div>
+        </div>
+        <div class="grade-btn" onclick="selectGrade(this, 50, 2.50, 'C+')" data-min="50">
+          <div class="grade-letter">C+</div>
+          <div class="grade-gpa">GPA 2.50</div>
+          <div class="grade-min">≥ 50</div>
+        </div>
+        <div class="grade-btn" onclick="selectGrade(this, 45, 2.25, 'C')" data-min="45">
+          <div class="grade-letter">C</div>
+          <div class="grade-gpa">GPA 2.25</div>
+          <div class="grade-min">≥ 45</div>
+        </div>
+        <div class="grade-btn" onclick="selectGrade(this, 40, 2.00, 'D')" data-min="40">
+          <div class="grade-letter">D</div>
+          <div class="grade-gpa">GPA 2.00</div>
+          <div class="grade-min">≥ 40</div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-primary" id="btn-step3-next" onclick="goStep(4)" disabled>Calculate →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Result -->
+    <div class="calc-card hidden" id="step-4">
+      <h2>Your Result</h2>
+      <p class="subtitle" id="result-subtitle"></p>
+      <div id="result-card"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goStep(3)">← Change Grade</button>
+        <button class="btn btn-reset" onclick="reset()">🔄 Start Over</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div th:replace="~{chatbot-fragment :: chatbot}"></div>
+
+<script>
+  var courseType   = null;
+  var selectedGpa  = null;
+  var selectedMin  = null;
+  var selectedLetter = null;
+
+  // ── Grade lookup: what letter grade does a total correspond to?
+  var GRADE_SCALE = [
+    { min: 80, letter: 'A+',  gpa: 4.00 },
+    { min: 75, letter: 'A',   gpa: 3.75 },
+    { min: 70, letter: 'A-',  gpa: 3.50 },
+    { min: 65, letter: 'B+',  gpa: 3.25 },
+    { min: 60, letter: 'B',   gpa: 3.00 },
+    { min: 55, letter: 'B-',  gpa: 2.75 },
+    { min: 50, letter: 'C+',  gpa: 2.50 },
+    { min: 45, letter: 'C',   gpa: 2.25 },
+    { min: 40, letter: 'D',   gpa: 2.00 },
+    { min:  0, letter: 'F',   gpa: 0.00 }
+  ];
+
+  function gradeFor(total) {
+    for (var i = 0; i < GRADE_SCALE.length; i++) {
+      if (total >= GRADE_SCALE[i].min) return GRADE_SCALE[i];
+    }
+    return GRADE_SCALE[GRADE_SCALE.length - 1];
+  }
+
+  function selectType(type) {
+    courseType = type;
+    document.getElementById('card-core').classList.toggle('selected', type === 'core');
+    document.getElementById('card-noncore').classList.toggle('selected', type === 'noncore');
+    document.getElementById('btn-step1-next').disabled = false;
+  }
+
+  function selectGrade(el, min, gpa, letter) {
+    document.querySelectorAll('.grade-btn').forEach(function(b) { b.classList.remove('selected'); });
+    el.classList.add('selected');
+    selectedMin    = min;
+    selectedGpa    = gpa;
+    selectedLetter = letter;
+    document.getElementById('btn-step3-next').disabled = false;
+  }
+
+  function goStep(n) {
+    document.querySelectorAll('.calc-card').forEach(function(c) { c.classList.add('hidden'); });
+    document.getElementById('step-' + n).classList.remove('hidden');
+    updateStepBar(n);
+    if (n === 2) buildInputs();
+    if (n === 4) showResult();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateStepBar(current) {
+    for (var i = 1; i <= 4; i++) {
+      var c = document.getElementById('circle-' + i);
+      var l = document.getElementById('label-' + i);
+      c.classList.remove('active', 'done');
+      l.classList.remove('active');
+      if (i < current) { c.classList.add('done'); c.textContent = '✓'; }
+      else if (i === current) { c.classList.add('active'); c.textContent = i; l.classList.add('active'); }
+      else { c.textContent = i; }
+    }
+  }
+
+  function buildInputs() {
+    var container = document.getElementById('inputs-container');
+    container.innerHTML = '';
+    if (courseType === 'core') buildCoreInputs(container);
+    else buildNonCoreInputs(container);
+  }
+
+  function buildCoreInputs(container) {
+    document.getElementById('step2-subtitle').textContent =
+      'Core course: Quiz Avg (15) + Attendance (10) + Assignment (35) = 60 marks before final.';
+
+    container.innerHTML =
+      '<div class="quiz-section">' +
+        '<div class="quiz-section-title">📝 Quiz Scores <span style="font-weight:400;color:var(--muted)">(3 quizzes — average will be scaled to 15)</span></div>' +
+        '<div class="quiz-inputs">' +
+          quizInput(1) + quizInput(2) + quizInput(3) +
+        '</div>' +
+      '</div>' +
+      markInput('attendance', 'Attendance', 10, '🗓️') +
+      markInput('assignment',  'Assignment',  35, '📄');
+  }
+
+  function buildNonCoreInputs(container) {
+    document.getElementById('step2-subtitle').textContent =
+      'Non-core course: Quiz Avg (15) + Mid (25) + Presentation (8) + Attendance (7) + Assignment (5) = 60 marks before final.';
+
+    container.innerHTML =
+      '<div class="quiz-section">' +
+        '<div class="quiz-section-title">📝 Quiz Scores <span style="font-weight:400;color:var(--muted)">(3 quizzes — average will be scaled to 15)</span></div>' +
+        '<div class="quiz-inputs">' +
+          quizInput(1) + quizInput(2) + quizInput(3) +
+        '</div>' +
+      '</div>' +
+      markInput('mid',          'Mid Exam',     25, '📋') +
+      markInput('presentation', 'Presentation',  8, '🎤') +
+      markInput('attendance',   'Attendance',    7, '🗓️') +
+      markInput('assignment',   'Assignment',    5, '📄');
+  }
+
+  function quizInput(n) {
+    return '<div class="quiz-input-group">' +
+      '<label>Quiz ' + n + '</label>' +
+      '<input type="number" id="q' + n + 'score" placeholder="Score" min="0" oninput="validateQuiz(' + n + ')">' +
+      '<input type="number" id="q' + n + 'max" placeholder="Out of" min="1" value="10" oninput="validateQuiz(' + n + ')">' +
+      '<div class="quiz-max-hint" id="q' + n + 'hint"></div>' +
+    '</div>';
+  }
+
+  function markInput(id, label, maxVal, icon) {
+    return '<div class="input-group">' +
+      '<label>' + icon + ' ' + label + ' <span class="max-label">out of ' + maxVal + '</span></label>' +
+      '<div class="input-row">' +
+        '<input type="number" id="' + id + '" placeholder="0" min="0" max="' + maxVal + '" step="0.5" oninput="clampInput(this,' + maxVal + ')">' +
+      '</div>' +
+    '</div>';
+  }
+
+  function validateQuiz(n) {
+    var score = parseFloat(document.getElementById('q' + n + 'score').value) || 0;
+    var max   = parseFloat(document.getElementById('q' + n + 'max').value)   || 10;
+    var hint  = document.getElementById('q' + n + 'hint');
+    var scoreEl = document.getElementById('q' + n + 'score');
+    if (score > max) {
+      scoreEl.classList.add('invalid');
+      hint.textContent = '⚠ Score exceeds max!';
+      hint.style.color = 'var(--red)';
+    } else {
+      scoreEl.classList.remove('invalid');
+      hint.textContent = max > 0 ? ((score / max * 100).toFixed(1) + '%') : '';
+      hint.style.color = 'var(--muted)';
+    }
+  }
+
+  function clampInput(el, max) {
+    var v = parseFloat(el.value);
+    if (!isNaN(v) && v > max) el.value = max;
+    if (!isNaN(v) && v < 0)   el.value = 0;
+  }
+
+  function getMarksBeforeFinal() {
+    var q1s = parseFloat(document.getElementById('q1score').value) || 0;
+    var q1m = parseFloat(document.getElementById('q1max').value)   || 10;
+    var q2s = parseFloat(document.getElementById('q2score').value) || 0;
+    var q2m = parseFloat(document.getElementById('q2max').value)   || 10;
+    var q3s = parseFloat(document.getElementById('q3score').value) || 0;
+    var q3m = parseFloat(document.getElementById('q3max').value)   || 10;
+
+    var quizAvgPct = ((q1s / q1m) + (q2s / q2m) + (q3s / q3m)) / 3;
+    var quizContrib = quizAvgPct * 15;
+
+    var total = quizContrib;
+
+    if (courseType === 'core') {
+      var attendance = parseFloat(document.getElementById('attendance').value) || 0;
+      var assignment = parseFloat(document.getElementById('assignment').value)  || 0;
+      total += attendance + assignment;
+    } else {
+      var mid          = parseFloat(document.getElementById('mid').value)          || 0;
+      var presentation = parseFloat(document.getElementById('presentation').value) || 0;
+      var attendanceN  = parseFloat(document.getElementById('attendance').value)   || 0;
+      var assignmentN  = parseFloat(document.getElementById('assignment').value)   || 0;
+      total += mid + presentation + attendanceN + assignmentN;
+    }
+    return { total: total, quizContrib: quizContrib };
+  }
+
+  function showResult() {
+    var data = getMarksBeforeFinal();
+    var marksBeforeFinal = data.total;
+    var needed = selectedMin - marksBeforeFinal;
+    var maxTotal = marksBeforeFinal + 40;
+    var maxGrade = gradeFor(maxTotal);
+    var subtitle = document.getElementById('result-subtitle');
+    var container = document.getElementById('result-card');
+
+    subtitle.textContent = 'Based on ' + marksBeforeFinal.toFixed(2) + ' marks before final (out of 60).';
+
+    var html = '';
+
+    if (needed <= 0) {
+      // Already achieved even without the final
+      var alreadyGrade = gradeFor(marksBeforeFinal + 40);
+      html = '<div class="result-card already-done">' +
+        '<div class="result-icon">🎉</div>' +
+        '<div class="result-main blue">Already Secured!</div>' +
+        '<div class="result-desc">You already have enough continuous assessment marks to secure <strong>' + selectedLetter + '</strong> even if you score 0 in the final! But aim high — every mark counts.</div>' +
+        resultBreakdown(marksBeforeFinal, 0, marksBeforeFinal, selectedLetter, selectedGpa) +
+      '</div>';
+    } else if (needed <= 40) {
+      var pct = (needed / 40 * 100);
+      var colorClass = pct <= 60 ? 'green' : (pct <= 80 ? 'orange' : 'red');
+      var cardClass  = pct <= 60 ? 'achievable' : 'tight';
+      var icon = pct <= 60 ? '✅' : '⚡';
+      html = '<div class="result-card ' + cardClass + '">' +
+        '<div class="result-icon">' + icon + '</div>' +
+        '<div class="result-main ' + colorClass + '">' + needed.toFixed(1) + ' / 40</div>' +
+        '<div class="result-desc">You need at least <strong>' + needed.toFixed(1) + ' marks out of 40</strong> in the final exam to achieve <strong>' + selectedLetter + ' (GPA ' + selectedGpa.toFixed(2) + ')</strong>. ' + (pct <= 60 ? 'This is very achievable — keep it up!' : 'It will require a strong performance in the final. Focus and prepare well!') + '</div>' +
+        resultBreakdown(marksBeforeFinal, needed, marksBeforeFinal + needed, selectedLetter, selectedGpa) +
+      '</div>';
+    } else {
+      // Not achievable — show what they CAN get
+      html = '<div class="result-card impossible">' +
+        '<div class="result-icon">❌</div>' +
+        '<div class="result-main red">' + selectedLetter + ' Not Achievable</div>' +
+        '<div class="result-desc">You would need <strong>' + needed.toFixed(1) + ' out of 40</strong> in the final, which is not possible. Even with a perfect score of 40 you can achieve a maximum total of <strong>' + maxTotal.toFixed(1) + '</strong> which gives <strong>' + maxGrade.letter + ' (GPA ' + maxGrade.gpa.toFixed(2) + ')</strong>.</div>' +
+        resultBreakdown(marksBeforeFinal, 40, maxTotal, maxGrade.letter, maxGrade.gpa) +
+      '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function resultBreakdown(before, finalNeeded, totalExpected, letter, gpa) {
+    return '<div class="result-breakdown">' +
+      '<div class="breakdown-item"><div class="breakdown-val">' + before.toFixed(1) + '</div><div class="breakdown-label">Before Final</div></div>' +
+      '<div class="breakdown-item"><div class="breakdown-val">' + (finalNeeded <= 40 ? finalNeeded.toFixed(1) : '—') + '</div><div class="breakdown-label">Needed in Final</div></div>' +
+      '<div class="breakdown-item"><div class="breakdown-val">' + letter + ' (' + gpa.toFixed(2) + ')</div><div class="breakdown-label">Target Grade</div></div>' +
+    '</div>';
+  }
+
+  function reset() {
+    courseType     = null;
+    selectedGpa    = null;
+    selectedMin    = null;
+    selectedLetter = null;
+    document.getElementById('card-core').classList.remove('selected');
+    document.getElementById('card-noncore').classList.remove('selected');
+    document.getElementById('btn-step1-next').disabled = true;
+    document.querySelectorAll('.grade-btn').forEach(function(b) { b.classList.remove('selected'); });
+    document.getElementById('btn-step3-next').disabled = true;
+    goStep(1);
+  }
+
+  // Start on step 1
+  updateStepBar(1);
+</script>
+</body>
+</html>
